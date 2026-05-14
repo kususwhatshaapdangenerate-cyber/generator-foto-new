@@ -1,0 +1,2787 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Upload, Sparkles, Image as ImageIcon, 
+  Plus, User, Settings, Video, Layers, 
+  Download, Copy, X, Wand2, FileText, Mic, Play,
+  Edit, RefreshCw, Maximize2, Volume2, Film, Send, Check, 
+  ChevronDown, MonitorPlay, Zap, LayoutGrid, Music, Globe, AlertCircle, Lock, Trash2, FileJson,
+  Layout, Smartphone, Monitor, Camera, Hand, ArrowLeft, Box, Edit2,
+  MapPin, Shirt, ScanFace, Lightbulb, ChevronUp, AlertTriangle
+} from 'lucide-react';
+
+/* ================================================================================
+   BAGIAN 1: KODE ASLI "TOOLS RT" (ContentCreatorStudio)
+   Semua fungsi dan logika dipertahankan 100% utuh.
+================================================================================
+*/
+
+// --- KONFIGURASI API (GLOBAL) ---
+const apiKey = ""; 
+
+// --- 1. DATA PRESETS & CONSTANTS (TAB 1) ---
+const MOTION_PRESETS = {
+  model: [
+    "Gerakan natural dan ringan (General)", 
+    "Pose santai dengan gestur tangan kecil (Fashion)",
+    "Pergerakan tubuh lembut dan terkontrol (Fashion)", 
+    "Perbaiki pakaian secara halus (Fashion)",
+    "Ganti pose secara perlahan (Fashion)", 
+    "Gerakan kepala mengikuti tubuh (Portrait)",
+    "Micro-steps natural (Full Body)", 
+    "Gestur menunjuk atau menyentuh produk (Promo)",
+    "Arahkan wajah sedikit ke kanan/kiri (Beauty)", 
+    "Gerakan napas natural (Chest rise/fall)",
+    "Gerakan Makan/Menggigit (Food Tasting)",
+    "Gerakan Minum/Sipping (Beverage)",
+    "Menunjukkan Isi/Tekstur Makanan (Food Detail)",
+    "Ekspresi Menikmati 'Yummy' (Reaction)",
+    "Menuang Air/Saus (Pouring Motion)",
+    "Mengoleskan Krim ke Wajah/Tangan (Application)",
+    "Menunjukkan Tekstur Produk di Jari (Texture Show)",
+    "Memegang Botol di Samping Wajah (Comparison)",
+    "Mencium Aroma Produk (Scent)",
+    "Mengetik/Scroll Layar (Interaction)",
+    "Membuka Laptop/Gadget (Unboxing style)",
+    "Menggunakan Alat/Mesin (Active Use)",
+    "Duduk/Menaiki Kendaraan/Alat (Riding/Sitting)",
+    "Memegang Produk dengan Stabil (Tech Showcase)"
+  ],
+  camera: [
+    "Kamera statis eye-level", 
+    "Push-in pelan (Mendekat)", 
+    "Pull-back pelan (Menjauh)",
+    "Slide kanan–kiri halus (Truck)", 
+    "Handheld ringan stabil (Vlog Style)", 
+    "Tilt-up lembut (Reveal)", 
+    "Tilt-down lembut", 
+    "Micro-pan 5–10 derajat", 
+    "Breathing motion subtle",
+    "Tracking Shot (Mundur) - Model Maju",
+    "Orbit/Arc Shot (Mengelilingi Objek)",
+    "Zoom Cepat (Dramatis/Impact)",
+    "Top-Down Moving (Flatlay Video)",
+    "Low Angle (Hero Shot/Megah)",
+    "FPV Drone Style (Dinamis Cepat)"
+  ]
+};
+
+const TALKING_STYLES = [
+    { id: 'silent', name: 'Diam (Silent/No Talk)' },
+    { id: 'casual', name: 'Ngobrol Santai (Casual Vlog)' },
+    { id: 'soft', name: 'Review Lembut (Soft Spoken)' },
+    { id: 'excited', name: 'Promosi Semangat (Excited)' },
+    { id: 'story', name: 'Bercerita (Storytelling)' }
+];
+
+const ACCENT_PRESETS = [
+    { id: 'none', name: '🇮🇩 Indonesia Formal' }, { id: 'gaul', name: '😎 Indo Gaul (Jaksel)' },
+    { id: 'jawa', name: '🟤 Jawa Medok' }, { id: 'sunda', name: '🔵 Sunda Halus' },
+    { id: 'betawi', name: '🟠 Betawi (Jakarta)' }, { id: 'medan', name: '🔴 Batak / Medan' },
+    { id: 'minang', name: '🟡 Minang / Padang' }, { id: 'papua', name: '🟢 Papua' },
+    { id: 'bali', name: '🟣 Bali' }, { id: 'makassar', name: '🟤 Makassar / Bugis' },
+    { id: 'manado', name: '🔵 Manado' }, { id: 'madura', name: '🔴 Madura' },
+    { id: 'palembang', name: '🟡 Palembang' }, { id: 'banjar', name: '🟠 Banjar' },
+    { id: 'aceh', name: '🟢 Aceh' }, { id: 'maluku', name: '🟣 Maluku / Ambon' },
+    { id: 'lombok', name: '🟤 Lombok / Sasak' }, { id: 'banyumasan', name: '🔴 Jawa Ngapak' },
+    { id: 'melayu', name: '🟡 Melayu Riau' }, { id: 'dayak', name: '🟢 Dayak' },
+    { id: 'lampung', name: '🟠 Lampung' }, { id: 'british', name: '🇬🇧 English (British)' }
+];
+
+const ttsVoices = [
+    { id: 'Zephyr', name: 'Zephyr (Pria - Ceria)' }, { id: 'Puck', name: 'Puck (Pria - Santai)' }, 
+    { id: 'Charon', name: 'Charon (Pria - Dalam)' }, { id: 'Kore', name: 'Kore (Wanita - Tegas)' }, 
+    { id: 'Fenrir', name: 'Fenrir (Pria - Semangat)' }, { id: 'Leda', name: 'Leda (Wanita - Muda)' }, 
+    { id: 'Orus', name: 'Orus (Pria - Percaya Diri)' }, { id: 'Aoede', name: 'Aoede (Wanita - Santai)' }, 
+    { id: 'Callirrhoe', name: 'Callirrhoe (Wanita - Lembut)' }, { id: 'Autonoe', name: 'Autonoe (Wanita - Ceria)' }, 
+    { id: 'Enceladus', name: 'Enceladus (Pria - Tenang)' }, { id: 'Iapetus', name: 'Iapetus (Pria - Berat)' }, 
+    { id: 'Umbriel', name: 'Umbriel (Wanita - Kalem)' }, { id: 'Algieba', name: 'Algieba (Pria - Formal)' }, 
+    { id: 'Despina', name: 'Despina (Wanita - Profesional)' }, { id: 'Erinome', name: 'Erinome (Wanita - Ramah)' }, 
+    { id: 'Algenib', name: 'Algenib (Pria - Cepat)' }, { id: 'Rasalgethi', name: 'Rasalgethi (Pria - Serak)' }, 
+    { id: 'Laomedeia', name: 'Laomedeia (Wanita - Energik)' }, { id: 'Achernar', name: 'Achernar (Pria - Jelas)' }, 
+    { id: 'Alnilam', name: 'Alnilam (Pria - Rendah)' }, { id: 'Schedar', name: 'Schedar (Pria - Berwibawa)' }, 
+    { id: 'Gacrux', name: 'Gacrux (Pria - Tua)' }, { id: 'Pulcherrima', name: 'Pulcherrima (Wanita - Elegan)' }, 
+    { id: 'Achird', name: 'Achird (Wanita - Manis)' }, { id: 'Zubenelgenubi', name: 'Zubenelgenubi (Pria - Kasual)' }, 
+    { id: 'Vindemiatrix', name: 'Vindemiatrix (Wanita - Dewasa)' }, { id: 'Sadachbia', name: 'Sadachbia (Pria - Intens)' }, 
+    { id: 'Sadaltager', name: 'Sadaltager (Pria - Santun)' }, { id: 'Sulafat', name: 'Sulafat (Wanita - Ibu)' }
+];
+
+const NEGATIVE_PROMPT_UGC = "morphing face, changing face, changing outfit, eye distortion, bad eyes, weird movement, body clipping, cloth clipping, hands going through body, hands going through clothes, distortion, disfigured, ugly, low quality, pixelated, blur, static, shaky, robotic motion, cartoon, illustration, 3d render, extra limbs, bad anatomy, floating objects, unnatural physics, watermark, digital text overlay, username, website, copyright, blurry product, out of focus product, unreadable text, gibberish text, distorted logo, messy text, crossed arms, folded arms";
+
+// --- CONSTANTS FOR TAB 3 (RENAMED TO AVOID CONFLICT) ---
+const LIVE_TALKING_STYLES = [
+  { id: 'expressive', name: 'Expressive & Cheerful (Ceria & Ekspresif)' },
+  { id: 'calm', name: 'Calm & Professional (Tenang & Pro)' },
+  { id: 'persuasive', name: 'Persuasive & Salesy (Menjual)' },
+  { id: 'silent', name: 'Silent / No Talk (Diam)' }
+];
+
+const CAM_MOVES = [
+  "Static Camera (Diam)",
+  "Slow Zoom In (Mendekat Pelan)",
+  "Slow Zoom Out (Menjauh Pelan)",
+  "Pan Left to Right",
+  "Handheld Shake (Vlog Style)"
+];
+
+// --- 2. HELPER FUNCTIONS ---
+
+const downloadHighResImage = (imageUrl, filename, targetRatioStr = '9:16') => {
+  const img = new Image();
+  img.crossOrigin = "anonymous"; 
+  img.src = imageUrl;
+   
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let targetW, targetH;
+    switch(targetRatioStr) {
+        case '1:1': targetW = 1080; targetH = 1080; break;
+        case '4:5': targetW = 1080; targetH = 1350; break;
+        case '16:9': targetW = 1920; targetH = 1080; break;
+        case '9:16': default: targetW = 1080; targetH = 1920; break;
+    }
+    canvas.width = targetW;
+    canvas.height = targetH;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    const scale = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    const x = (canvas.width - w) / 2;
+    const y = (canvas.height - h) / 2;
+    ctx.drawImage(img, x, y, w, h);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png', 1.0); 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+};
+
+const secureCopy = (text, onSuccess) => {
+  if (!text) return;
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful && onSuccess) onSuccess();
+  } catch (err) { console.error('Copy failed', err); }
+};
+
+const fileToBase64 = async (file) => {
+    if (!file) return null;
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+    });
+};
+
+const urlToBase64 = async (url) => {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    } catch { return null; }
+};
+
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const base64ToArrayBuffer = (base64) => {
+    const binaryString = window.atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+    return bytes.buffer;
+};
+
+const pcmToWav = (pcmData, sampleRate = 24000) => {
+    const pcm16 = new Int16Array(pcmData);
+    const buffer = new ArrayBuffer(44 + pcm16.length * 2);
+    const view = new DataView(buffer);
+    const writeString = (offset, string) => { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); };
+    writeString(0, 'RIFF'); view.setUint32(4, 36 + pcm16.length * 2, true); writeString(8, 'WAVE'); writeString(12, 'fmt ');
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); writeString(36, 'data');
+    view.setUint32(40, pcm16.length * 2, true);
+    for (let i = 0; i < pcm16.length; i++) view.setInt16(44 + i * 2, pcm16[i], true);
+    return new Blob([view], { type: 'audio/wav' });
+};
+
+// --- API HELPER FUNCTIONS ---
+
+const callApi = async (payload, isText = false) => {
+    const targetModel = isText ? "gemini-2.5-flash-preview-09-2025" : "gemini-2.5-flash-image-preview";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
+    
+    for(let attempt = 0; attempt < 3; attempt++) {
+        try {
+            const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            if (!res.ok) {
+                if (res.status === 429 || res.status >= 500) {
+                    await wait(500 * (attempt + 1));
+                    continue; 
+                }
+                throw new Error(`API Error: ${res.status}`);
+            }
+            const data = await res.json();
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                 await wait(500);
+                 continue;
+            }
+            if(isText) return data.candidates[0].content.parts[0].text;
+            const imgData = data.candidates[0].content.parts.find(p => p.inlineData);
+            if (imgData) return `data:image/png;base64,${imgData.inlineData.data}`;
+        } catch(e) {
+            if (attempt === 2) return null;
+            await wait(500);
+        }
+    }
+    return null;
+};
+
+const callTtsApi = async (payload) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+    const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    const data = await res.json();
+    if (!data.candidates?.[0]) throw new Error("Gagal membuat suara.");
+    const part = data.candidates[0].content.parts[0];
+    return { audioData: part.inlineData.data, sampleRate: 24000 }; 
+};
+
+const generateImageToImageAPI = async (prompt, base64Image, additionalImages = []) => {
+  const parts = [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: base64Image.split(',')[1] } }];
+  additionalImages.forEach(img => { 
+      if (img.data) parts.push({ inlineData: { mimeType: 'image/png', data: img.data.split(',')[1] } }); 
+  });
+  try {
+    const payload = { contents: [{ parts }], generationConfig: { responseModalities: ["IMAGE"] } };
+    return await callApi(payload, false);
+  } catch (e) { return null; }
+};
+
+const generateTextAPI = async (prompt) => {
+    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+    return await callApi(payload, true);
+};
+
+// --- LOGIC HELPER: PROMPT BUILDER ---
+const buildSmartPrompt = (category, productInfo, modelData, supportingImagesData, index, ratioString, modelStyle, aiModelConfig, poseDescription) => {
+    
+    // 1. BASE INSTRUCTION
+    let fullPrompt = `(ASPECT RATIO: ${ratioString}). \n\n`;
+    
+    // 2. CORE REQUIREMENT: REALISM & ANTI-STICKER
+    fullPrompt += `**CORE REQUIREMENT:** Generate a Hyper-Realistic Photo. The product (Image 1) must be seamlessly integrated into the scene with matching lighting, shadows, and reflections. NO "sticker effect" or bad cutouts. \n\n`;
+
+    // 3. CATEGORY SPECIFIC LOGIC
+    if (category === 'broll') {
+        const brollPrompts = [
+            "B-Roll. Foto makro super detail dari produk referensi. Fokus pada tekstur. Latar belakang solid atau gradasi halus. (NO MODEL).", 
+            "B-Roll. Foto produk referensi dari sudut pandang atas (top-down). Flat lay minimalis. Pencahayaan softbox. (NO MODEL).", 
+            "B-Roll. Foto produk referensi dalam sebuah adegan dinamis. Tampilkan produk seolah-olah baru saja digunakan. (NO MODEL).", 
+            "B-Roll. Foto produk referensi diletakkan secara alami di atas permukaan tekstur (kayu/marmer/kain). Bokeh background. (NO MODEL).", 
+            "B-Roll. Produk difoto dengan pencahayaan siluet (rim lighting) untuk kesan mewah dan misterius. (NO MODEL).", 
+            "B-Roll. Close-up ekstrem pada logo atau fitur unik produk. Depth of field sangat tipis. (NO MODEL)."
+        ];
+        const selectedPrompt = brollPrompts[index % brollPrompts.length];
+        
+        fullPrompt += `**SUBJECT:** Produk utama (Image 1). ${productInfo}. \n`;
+        if (supportingImagesData.length > 0) {
+             fullPrompt += `**BACKGROUND:** Gunakan gambar pendukung sebagai referensi latar (MUTLAK). \n`;
+        }
+        fullPrompt += `**STYLE:** ${selectedPrompt} \n`;
+    } 
+    else if (category === 'commercial') {
+          // --- LOGIKA KOMERSIAL BARU ---
+          const hasCustomBg = supportingImagesData.length > 0;
+          if (hasCustomBg) {
+               fullPrompt += `Produk utama ada di gambar pertama. ${productInfo}. `;
+               fullPrompt += " INSTRUKSI MUTLAK: GUNAKAN CUSTOM BACKGROUND YANG DIUPLOAD SEBAGAI LATAR. Hapus teks/watermark asli produk. Integrasikan produk dengan LIGHTING MATCHING (Shadow & Tone) agar menyatu dengan background.";
+               fullPrompt += " PRODUCT FIDELITY: Keep original product details 100% accurate. Keep brand logos on product. Remove digital watermarks/text overlays.";
+               
+               // Helper to inject specific image refs
+               supportingImagesData.forEach((img, i) => {
+                   fullPrompt += ` (Ref BG: Image ${i+2})`;
+               });
+          } else {
+               // DETEKSI KATEGORI (FASHION vs BEAUTY vs FOOD vs GENERAL)
+               const lowerInfo = productInfo.toLowerCase();
+               const isFashion = lowerInfo.match(/baju|kaos|kemeja|celana|rok|dress|jaket|hoodie|fashion|pakaian|batik|gamis|tunik|blouse|sweater/);
+               const isBeauty = lowerInfo.match(/serum|toner|face wash|sabun|lotion|skincare|beauty|kosmetik|lipstik|parfum|shampoo|body wash|pembersih wajah/);
+               const isFood = lowerInfo.match(/snack|makanan|minuman|keripik|kopi|teh|susu|coklat|roti|kue|biskuit/);
+
+               let specificPrompt = "";
+               
+               if (isFashion) {
+                   const fashionPrompts = [
+                       "Komersial. Wooden Mannequin Display. Baju dipakaikan pada manekin kayu estetik. Latar studio bersih. (TIDAK ADA HANGER/GANTUNGAN).",
+                       "Komersial. Hanging on a Clothing Rack. Baju digantung menggunakan hanger pada tiang gantungan berdiri (seperti standing hanger / jemuran butik estetik). Kain menjuntai ke bawah natural mengikuti gravitasi.",
+                       "Komersial. Flat Lay Folded. Baju dilipat rapi dan diletakkan datar di atas permukaan meja atau alas kain estetik. (TIDAK ADA HANGER/GANTUNGAN).",
+                       "Komersial. Lifestyle Still Life. Baju disampirkan secara santai dan natural di atas sandaran kursi kayu estetik. (TIDAK ADA HANGER/GANTUNGAN)."
+                   ];
+                   specificPrompt = fashionPrompts[index % fashionPrompts.length];
+               } else if (isBeauty) {
+                   const beautyPrompts = [
+                       "Komersial. Bathroom Vanity. Produk di atas meja wastafel marmer. Ada cermin dan keran air blur di background. Lighting segar.",
+                       "Komersial. Water Splash/Texture. Produk dikelilingi tekstur air atau bahan utamanya (misal aloe vera/bunga). Segar dan dinamis.",
+                       "Komersial. Podium Minimalis. Produk di atas podium geometris warna pastel. Lighting studio soft.",
+                       "Komersial. Hard Light Shadow. Pencahayaan keras membentuk bayangan artistik (Gobolight). Latar dinding tekstur.",
+                       "Komersial. Floating Levitation. Produk melayang di udara dengan elemen air/bunga melayang. Cinematic.",
+                       "Komersial. Group Shot/Texture Smear. Produk diletakkan di samping olesan krim/tekstur isinya. Makro."
+                   ];
+                   specificPrompt = beautyPrompts[index % beautyPrompts.length];
+               } else if (isFood) {
+                   const foodPrompts = [
+                       "Komersial. Kitchen Counter. Produk di meja dapur kayu dengan bahan-bahan masakan di latar belakang blur. Warm lighting.",
+                       "Komersial. Floating Ingredients. Produk (Snack) melayang dengan kepingan isinya berterbangan dinamis. Latar warna pop.",
+                       "Komersial. Picnic/Outdoor. Produk di atas alas piknik, cahaya matahari natural (Golden Hour). Rumput blur di latar.",
+                       "Komersial. Table Setting. Produk di meja makan siap santap. Ada piring/gelas pendukung. Appetizing look.",
+                       "Komersial. Flat Lay Ingredients. Produk di tengah, dikelilingi bahan baku mentahnya yang estetik.",
+                       "Komersial. Hand Held POV. Sudut pandang tangan memegang kemasan produk siap makan. Background jalanan/taman blur."
+                   ];
+                   specificPrompt = foodPrompts[index % foodPrompts.length];
+               } else {
+                   // General Objects
+                   const generalPrompts = [
+                       "Komersial. Studio Minimalis. Produk di atas meja putih bersih. Soft shadows. Professional e-commerce look.",
+                       "Komersial. Textured Surface. Produk di atas permukaan beton/batu. Kesan premium dan kokoh.",
+                       "Komersial. Lifestyle Context. Produk diletakkan di lingkungan penggunaannya (misal meja kerja/ruang tamu).",
+                       "Komersial. Hard Light Dramatic. Cahaya kontras tinggi. Moody dan elegan.",
+                       "Komersial. Floating/Levitation. Produk melayang miring. Latar gradasi.",
+                       "Komersial. Box & Packaging. Fokus pada kemasan produk dengan angle isometrik."
+                   ];
+                   specificPrompt = generalPrompts[index % generalPrompts.length];
+               }
+               
+               fullPrompt += `Produk utama ada di gambar pertama. ${productInfo}. ${specificPrompt}`;
+               fullPrompt += " HAPUS WATERMARK/TEKS ASLI. TAMPILKAN PRODUK REALISTIS SESUAI JENISNYA. KEEP ORIGINAL LOGO ON PRODUCT.";
+          }
+          // --- END LOGIKA KOMERSIAL BARU ---
+    } 
+    else if (category === 'ugc') {
+        // Keep strict UGC logic
+        fullPrompt += `**PRODUCT & CONCEPT (MANDATORY):**\n`;
+        fullPrompt += `- **Main Product:** Image 1.\n`;
+        fullPrompt += `- **Description/Concept:** ${productInfo || "Sesuikan dengan kategori."} (Ikuti konsep ini secara MUTLAK).\n`;
+        
+        let customBgInstruction = "";
+        if (supportingImagesData.length > 0) {
+            supportingImagesData.forEach((img, i) => {
+                const d = (img.desc || "").toLowerCase();
+                if (d.match(/latar|background|bg|backdrop|tempat|lokasi/)) {
+                    customBgInstruction += ` - **BACKGROUND REFERENCE:** Gunakan Foto Pendukung yang diupload sebagai referensi latar belakang (MUTLAK). Description: "${img.desc}".\n`;
+                }
+            });
+        }
+        if (customBgInstruction) {
+            fullPrompt += `**VISUAL REFERENCES (FOTO PENDUKUNG):**\n${customBgInstruction}`;
+        }
+
+        fullPrompt += `\n**MODEL & POSE INSTRUCTIONS (HIGHEST PRIORITY):**\n`;
+        if (modelStyle) fullPrompt += `- **OUTFIT (PAKAIAN MODEL):** ${modelStyle} (Follow strictly/MUTLAK).\n`;
+        if (poseDescription) fullPrompt += `- **POSE (GAYA):** ${poseDescription} (Follow strictly/MUTLAK).\n`;
+        fullPrompt += `- **FASHION POSE RULE:** IF the original Product Image (Image 1) already shows a human model, **IGNORE** the original pose/action. Create a **NEW** fresh pose based on the description above. Do NOT just copy the original image's composition.\n`;
+
+        if (modelData.length > 0) {
+           fullPrompt += `- **FACE SWAP:** Use the face from the provided Model Reference Image.\n`;
+        } else {
+           const gender = aiModelConfig.gender === 'auto' ? 'Orang Indonesia' : (aiModelConfig.gender === 'female' ? 'Wanita Indonesia' : 'Pria Indonesia');
+           fullPrompt += `- **AI MODEL:** Generate a photorealistic ${gender}, age group: ${aiModelConfig.age}.\n`;
+           if (aiModelConfig.hijab) fullPrompt += `- **ATTRIBUTE:** WAJIB HIJAB/Jilbab.\n`;
+        }
+        
+        const ugcPrompts = [
+            "UGC. Replikasi model sedang menggunakan produk referensi dengan pose kasual.",
+            "UGC. Replikasi model sedang menggunakan produk referensi dengan pose bersemangat.",
+            "UGC. Replikasi model sedang menggunakan produk referensi dengan pose santai.",
+            "UGC. Replikasi model sedang menggunakan produk referensi, diambil dari sudut berbeda.",
+            "UGC. Replikasi model sedang memegang produk dengan ekspresi percaya diri.",
+            "UGC. Replikasi model sedang menunjukkan produk sambil tersenyum ke kamera (candid)."
+        ];
+        const ugcTemplate = ugcPrompts[index % ugcPrompts.length];
+        fullPrompt += `\n**BASE STYLE:** ${ugcTemplate}\n`;
+    }
+
+    return fullPrompt;
+};
+
+// --- COMPONENTS (SUB) ---
+
+const StepPanel = ({ number, title, icon: Icon, children }) => (
+  <div className="bg-slate-900 border-2 border-blue-500 rounded-xl overflow-hidden mb-6 shadow-sm shadow-blue-500/10 hover:border-blue-400 transition-colors">
+    <div className="px-5 py-4 border-b border-blue-500/30 bg-slate-950/50 flex items-center gap-3">
+      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm font-mono shadow-md shadow-blue-500/20">
+        {number}
+      </div>
+      <div className="flex-1 text-slate-100 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+          {title} {Icon && <Icon size={14} className="text-blue-400" />}
+      </div>
+    </div>
+    <div className="p-5 space-y-5 relative">
+       {children}
+    </div>
+  </div>
+);
+
+const ResultCard = ({ item, onViewImage, productInfo, selectedRatio, onRegenerate }) => {
+  const [image, setImage] = useState(item.url);
+  const [loading, setLoading] = useState(item.loading);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editPrompt, setEditPrompt] = useState("");
+  const [showMotion, setShowMotion] = useState(false);
+  const [motionText, setMotionText] = useState("");
+  const [motionData, setMotionData] = useState(null); 
+  const [isMotionLoading, setIsMotionLoading] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("Salin Teks");
+  const [copyStatusJson, setCopyStatusJson] = useState("Salin JSON");
+  const [motionLang, setMotionLang] = useState('ID');
+  const [selectedCamMove, setSelectedCamMove] = useState(MOTION_PRESETS.camera[0]);
+  const [selectedModelMove, setSelectedModelMove] = useState(MOTION_PRESETS.model[0]);
+  const [selectedTalkingStyle, setSelectedTalkingStyle] = useState(TALKING_STYLES[0].id);
+
+  useEffect(() => { setImage(item.url); setLoading(item.loading); }, [item]);
+
+  useEffect(() => {
+    if (motionData) {
+        setMotionText(motionLang === 'ID' ? motionData.text_id : motionData.text_en);
+    }
+  }, [motionLang, motionData]);
+
+  const getAspectRatioStyle = () => {
+      switch (selectedRatio) {
+          case '9:16': return { aspectRatio: '9/16' };
+          case '4:5': return { aspectRatio: '4/5' };
+          case '1:1': return { aspectRatio: '1/1' };
+          case '16:9': return { aspectRatio: '16/9' };
+          default: return { aspectRatio: '9/16' };
+      }
+  };
+
+  const handleRegenerate = async () => {
+    const promptToUse = editPrompt 
+        ? `EDIT INSTRUCTION: ${editPrompt}. \nCONTEXT: ${productInfo}. \nRULES: \n1. PRESERVE the product/subject identity exactly. \n2. ONLY change the specific action/pose/element requested. \n3. IF user asks to USE/RIDE an object (like bike/motor), model must be interacting properly (sitting on it, etc), NOT lifting it. \n4. IF user asks to change pose, ensure background remains consistent unless asked to change. \n5. CRITICAL: AGGRESSIVELY REMOVE ALL DIGITAL WATERMARKS, TEXT OVERLAYS, AND STORE NAMES FROM THE IMAGE. PRESERVE ONLY THE PHYSICAL LOGO ATTACHED TO THE PRODUCT. TEXT FIDELITY: ENSURE BRAND TEXT ON PRODUCT REMAINS LEGIBLE AND NOT GARBLED. \nKualitas: Shot on Sony A7R IV, 8k, Photorealistic, f/8 Aperture for Deep Focus.`
+        : "Buat ulang gambar ini dengan variasi berbeda. High quality.";
+
+    setLoading(true);
+    try {
+        const currentBase64 = image ? await urlToBase64(image) : null; 
+        if (currentBase64) {
+             const newUrl = await generateImageToImageAPI(promptToUse, currentBase64);
+             if (newUrl) { setImage(newUrl); setShowEdit(false); setEditPrompt(""); }
+        }
+    } catch(e) {}
+    setLoading(false);
+  };
+
+  const handleMotion = async (force = false) => {
+    if(!force && motionData) return; 
+    setIsMotionLoading(true);
+    setCopyStatus("Salin Teks");
+    setCopyStatusJson("Salin JSON");
+
+    try {
+        let currentBase64 = image;
+        if (!image.startsWith('data:')) {
+             currentBase64 = await urlToBase64(image);
+        }
+        
+        if (!currentBase64) throw new Error("Gagal memproses gambar");
+
+        const categoryStyle = item.category === 'ugc' ? "Cinematic Vlog/UGC" : item.category === 'commercial' ? "High End Commercial" : "Cinematic B-Roll";
+        const isProductMode = item.category === 'broll' || item.category === 'commercial';
+        
+        const prompt = `Bertindaklah sebagai Director Video AI. Analisis gambar ini (kategori: ${item.category}).
+        1. DETEKSI SUBJEK: ${isProductMode ? "Fokus pada PRODUK/OBJEK. Abaikan deteksi manusia kecuali sangat jelas terlihat. JANGAN paksakan ada model jika gambar hanya produk." : "Cek Gender (Pria/Wanita), Jumlah Orang, Pakaian, dan Wajah. Sesuaikan deskripsi subject dengan fakta visual ini."}
+        2. Gerakan Kamera: "${selectedCamMove}"
+        3. Gerakan Subjek: "${isProductMode ? "Fokus pada produk. Abaikan gerakan manusia jika tidak ada orang. Jika produk benda mati, buat gerakan statis atau fisika natural (uap, kilau, tuang). Gerakan Kamera adalah prioritas utama." : selectedModelMove}"
+        4. Gaya Bicara: "${isProductMode ? "Silent (Product Shot)" : TALKING_STYLES.find(t=>t.id===selectedTalkingStyle).name}"
+        
+        Tugas: Buat prompt video AI (Google Veo/Flow/Runway/Kling) yang PADAT, JELAS, dan LANGSUNG KE VISUAL.
+        
+        ATURAN DIALOG:
+        - Jika Gaya Bicara bukan 'silent' dan ada model manusia, buatkan dialog pendek Bahasa Indonesia yang menarik dan relevan dengan produk "${productInfo}".
+        - Letakkan dialog di dalam kurung (...) pada bagian 'action'. Contoh: "Mouth moves naturally speaking: (Halo guys, cek produk ini ya!)".
+        
+        ATURAN PENULISAN (STRICT):
+        1. JANGAN bertele-tele. JANGAN mulai dengan kata teknis kamera seperti "Bidikan...", "Video ini...", "Kamera...".
+        2. WAJIB DIMULAI LANGSUNG dengan deskripsi fisik subjek yang SPESIFIK dan AKURAT. 
+           ${isProductMode ? "Contoh: 'A close-up of a hot coffee cup with steam rising...' atau 'A sleek smartphone on a wooden table...' (TANPA MODEL)" : "Contoh: 'Model wanita Asia, rambut panjang bergelombang...'"}
+        3. CONTEXT AWARENESS: AI harus menyesuaikan gerakan berdasarkan ada/tidaknya manusia.
+
+        Wajib berikan output HANYA dalam format JSON valid (tanpa markdown) dengan struktur berikut:
+        {
+           "text_id": "Prompt Bahasa Indonesia (Mulai langsung dengan deskripsi visual subjek)...",
+           "text_en": "Prompt English (Start directly with visual subject description). TRANSLATE EVERYTHING TO ENGLISH EXCEPT THE DIALOGUE INSIDE PARENTHESES (...) WHICH MUST REMAIN IN INDONESIAN.",
+           "structured_json": {
+               "shot_description": {
+                   "subject": "${isProductMode ? "The product in the photo (Describe specific product details: color, texture, shape). Maintain 100% fidelity to the original product image. No human model description needed unless visible." : "(Ganti ini dengan deskripsi subjek spesifik: 'An Indonesian woman...', 'A man...', 'Two people: man and woman...') with the exact same face, facial structure, eyes, hair, clothing, outfit pattern, outfit color, and fabric texture, all identical to the original photo with absolutely no changes."}",
+                   "action": "${isProductMode ? `Camera movement is ${selectedCamMove}. Product remains the focal point. (AI Generate natural product action if applicable, e.g., steam rising, rotating, or static).` : `The model moves naturally: ${selectedModelMove}. [IF TALKING: Their mouth moves naturally while speaking in Indonesian with a ${selectedTalkingStyle} tone: (Insert Generated Dialog Here)]. The head follows the body subtly and naturally.`}",
+                   "setting": "The background and lighting remain exactly the same as the original photo, with no color changes, no altered shadows, and no missing or added elements."
+               },
+               "cinematography": {
+                   "camera_angle": "${selectedCamMove}",
+                   "shot_type": "Mid to full body shot (matching the original photo perspective)",
+                   "lighting": "Stable natural lighting with no changes in brightness or color temperature",
+                   "style": "${categoryStyle}, natural movement, high quality, smooth and natural motion"
+               },
+               "negative": "${NEGATIVE_PROMPT_UGC}"
+           }
+        }`;
+
+        const payload = { 
+            contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: currentBase64.split(',')[1] } }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        };
+        
+        const textResponse = await callApi(payload, true); 
+        
+        if (!textResponse) throw new Error("Tidak ada respon dari AI");
+
+        let jsonStr = textResponse.trim();
+        jsonStr = jsonStr.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+        
+        try {
+            const parsedData = JSON.parse(jsonStr);
+            setMotionData(parsedData);
+            setMotionText(motionLang === 'ID' ? parsedData.text_id : parsedData.text_en);
+        } catch (parseError) {
+            console.error("JSON Parse Error:", parseError);
+            setMotionText("Gagal memproses data gerakan (Invalid JSON). Silakan coba lagi.");
+        }
+
+    } catch(e) { 
+        console.error(e);
+        setMotionText("Gagal menganalisa gerakan. Pastikan koneksi lancar."); 
+    }
+    setIsMotionLoading(false);
+  };
+
+  const handleCopyText = () => {
+      secureCopy(motionText, () => {
+          setCopyStatus("Tersalin! ✅");
+          setTimeout(() => setCopyStatus("Salin Teks"), 2000);
+      });
+  };
+
+  const handleCopyJson = () => {
+      if (motionData && motionData.structured_json) {
+          const jsonString = JSON.stringify(motionData.structured_json, null, 2);
+          secureCopy(jsonString, () => {
+              setCopyStatusJson("JSON Tersalin! ✅");
+              setTimeout(() => setCopyStatusJson("Salin JSON"), 2000);
+          });
+      }
+  };
+
+  return (
+    <div className="shrink-0 bg-slate-950 rounded-lg border border-slate-800 overflow-hidden group relative flex flex-col shadow-lg shadow-yellow-500/20" 
+         style={{ width: selectedRatio === '16:9' ? '460px' : selectedRatio === '1:1' ? '340px' : '280px' }}>
+        
+        <div className="relative bg-slate-900 w-full" style={getAspectRatioStyle()}>
+             {!loading && image && (
+               <button 
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   onRegenerate();
+                 }}
+                 className="absolute top-2 right-2 w-8 h-8 bg-black/50 hover:bg-black/80 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center text-white transition-all z-50 shadow-sm cursor-pointer"
+                 title="Regenerate This Image"
+               >
+                 <RefreshCw size={14} />
+               </button>
+             )}
+
+            {loading ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-2 p-4 text-center">
+                    <RefreshCw className="animate-spin" size={24}/>
+                    <span className="text-[10px] font-bold font-mono animate-pulse">SABAR PAK RT LAGI BUAT GAMBAR!!</span>
+                </div>
+            ) : image ? (
+                <>
+                    <img src={image} className="w-full h-full object-cover" onClick={() => onViewImage(image)}/>
+                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-yellow-400 uppercase border border-white/10">{item.category}</div>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 gap-2">
+                        <div className="flex gap-2">
+                            <button onClick={() => downloadHighResImage(image, `result-${item.id}.png`, selectedRatio)} className="flex-1 bg-white text-black text-[10px] font-bold py-2 rounded hover:bg-slate-200">DOWNLOAD HD</button>
+                            <button onClick={() => onViewImage(image)} className="p-2 bg-slate-700 text-white rounded"><Maximize2 size={14}/></button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => {setShowEdit(!showEdit); setShowMotion(false);}} className={`text-white text-[10px] py-2 rounded font-medium ${showEdit ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`}>EDIT</button>
+                            <button onClick={() => {setShowMotion(!showMotion); setShowEdit(false); if(!motionData) handleMotion(true);}} className={`text-white text-[10px] py-2 rounded font-medium ${showMotion ? 'bg-purple-600' : 'bg-slate-700 hover:bg-slate-600'}`}>MOTION</button>
+                        </div>
+                    </div>
+                </>
+            ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-red-500 gap-2 bg-slate-950 border-2 border-red-900/30 border-dashed rounded-lg">
+                    <AlertCircle size={24}/>
+                    <span className="text-xs font-bold">GAGAL GENERATE</span>
+                    <button onClick={onRegenerate} className="text-[10px] bg-red-900/50 hover:bg-red-900 text-red-200 px-3 py-1 rounded border border-red-800 transition-colors z-50 relative">Coba Lagi</button>
+                </div>
+            )}
+        </div>
+        
+        {(showEdit || showMotion) && !loading && image && (
+            <div className="p-3 bg-slate-900 border-t border-slate-800 w-full animate-in slide-in-from-bottom-2">
+                <div className="flex justify-between mb-2 items-center">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{showEdit ? "Magic Edit" : "Video Prompt"}</span>
+                    <button onClick={() => {setShowEdit(false); setShowMotion(false);}}><X size={12} className="text-slate-500 hover:text-white"/></button>
+                </div>
+                
+                {showEdit && (
+                    <div className="flex gap-2">
+                        <input value={editPrompt} onChange={e=>setEditPrompt(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-2 text-[10px] text-white focus:border-yellow-500 outline-none" placeholder="Contoh: Ubah background..."/>
+                        <button onClick={handleRegenerate} className="bg-blue-600 p-2 rounded text-white hover:bg-blue-500"><Send size={12}/></button>
+                    </div>
+                )}
+                
+                {showMotion && (
+                    <div className="space-y-3">
+                         <div className="flex justify-end gap-1 mb-1">
+                             <button onClick={() => setMotionLang('ID')} className={`text-[9px] px-2 py-0.5 rounded transition-colors border ${motionLang === 'ID' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-transparent border-slate-700 text-slate-500 hover:text-white'}`}>IND</button>
+                             <button onClick={() => setMotionLang('EN')} className={`text-[9px] px-2 py-0.5 rounded transition-colors border ${motionLang === 'EN' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-transparent border-slate-700 text-slate-500 hover:text-white'}`}>ENG</button>
+                         </div>
+                         
+                         <div className="space-y-2">
+                             <select className="w-full bg-slate-950 border border-slate-700 text-[10px] text-white rounded px-2 py-1 outline-none" value={selectedCamMove} onChange={e=>setSelectedCamMove(e.target.value)}>
+                                 {MOTION_PRESETS.camera.map(m => <option key={m} value={m}>{m}</option>)}
+                             </select>
+                             <select className="w-full bg-slate-950 border border-slate-700 text-[10px] text-white rounded px-2 py-1 outline-none" value={selectedModelMove} onChange={e=>setSelectedModelMove(e.target.value)}>
+                                 {MOTION_PRESETS.model.map(m => <option key={m} value={m}>{m}</option>)}
+                             </select>
+                             <select className="w-full bg-slate-950 border border-slate-700 text-[10px] text-white rounded px-2 py-1 outline-none" value={selectedTalkingStyle} onChange={e=>setSelectedTalkingStyle(e.target.value)}>
+                                 {TALKING_STYLES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                             </select>
+                         </div>
+                         
+                         <button onClick={() => handleMotion(true)} disabled={isMotionLoading} className="w-full bg-purple-600 hover:bg-purple-500 text-white text-[10px] py-1.5 rounded flex items-center justify-center gap-2 font-bold">
+                            {isMotionLoading ? <RefreshCw size={10} className="animate-spin"/> : <RefreshCw size={10}/>}
+                            {isMotionLoading ? "Menganalisis..." : "Buat Ulang Prompt"}
+                         </button>
+                         
+                         <div className="bg-black/30 p-2 rounded border border-slate-800">
+                             <div className="text-[9px] text-slate-300 h-20 overflow-y-auto custom-scrollbar mb-2 leading-relaxed whitespace-pre-wrap">
+                                 {motionText || "Klik tombol untuk membuat prompt..."}
+                             </div>
+                             
+                             {motionText && (
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <button onClick={handleCopyText} className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] py-1.5 rounded border border-slate-700 flex items-center justify-center gap-1 transition-colors">
+                                        <Copy size={10}/> {copyStatus}
+                                    </button>
+                                    <button onClick={handleCopyJson} className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] py-1.5 rounded border border-slate-700 flex items-center justify-center gap-1 transition-colors">
+                                        <FileJson size={10}/> {copyStatusJson}
+                                    </button>
+                                </div>
+                             )}
+                         </div>
+                    </div>
+                )}
+            </div>
+        )}
+    </div>
+  );
+};
+
+// --- MAIN CONTENT CREATOR STUDIO COMPONENT ---
+
+const ContentCreatorStudio = () => {
+  const [loading, setLoading] = useState(false);
+  const [resultsReady, setResultsReady] = useState(false);
+  const [isStudioOpen, setIsStudioOpen] = useState(false); 
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+  
+  // Inputs
+  const [mainPhoto, setMainPhoto] = useState(null); 
+  const [mainPhotoFile, setMainPhotoFile] = useState(null);
+  const [additionalPhotos, setAdditionalPhotos] = useState([]); 
+  const [productInfo, setProductInfo] = useState('');
+  
+  // Settings
+  const [models, setModels] = useState([]);
+  const [aiModelConfig, setAiModelConfig] = useState({ gender: 'auto', age: 'Remaja', hijab: false });
+  const [modelStyle, setModelStyle] = useState(''); 
+  const [poseDescription, setPoseDescription] = useState(''); 
+  const [ratio, setRatio] = useState('9:16'); 
+  
+  // Outputs
+  const [generatedImages, setGeneratedImages] = useState({ broll: [], ugc: [], commercial: [] });
+  const [viewImageUrl, setViewImageUrl] = useState(null);
+  const [showRecModal, setShowRecModal] = useState(false);
+  
+  // Warning Popup State
+  const [showWarning, setShowWarning] = useState(true);
+
+  // VO State
+  const [voState, setVoState] = useState({ script: "", audioUrl: null, loadingScript: false, loadingAudio: false, isPlaying: false, category: 'broll', voice: 'Zephyr', accent: 'none' });
+  const audioRef = useRef(null);
+
+  const handleWarningDismiss = () => setShowWarning(false);
+
+  const handlePhotoUpload = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (type === 'main') { 
+        setMainPhoto(url); 
+        setMainPhotoFile(file); 
+    }
+    else if (type === 'model') { 
+        if (models.length < 2) setModels([...models, {id: Date.now(), url, file, styleDesc: ''}]); 
+    }
+    else if (type === 'additional') { setAdditionalPhotos([...additionalPhotos, {id: Date.now(), url, file, desc: ''}]); }
+    e.target.value = null;
+  };
+
+  const updateModelDesc = (id, text) => {
+      setModels(prev => prev.map(m => m.id === id ? { ...m, styleDesc: text } : m));
+  };
+
+  const handleRemoveAdditional = (id) => {
+      setAdditionalPhotos(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleApplyRecommendation = async () => {
+    if (!mainPhotoFile) return alert("Upload foto produk dulu!");
+    setIsGeneratingDesc(true);
+    try {
+        const b64 = await fileToBase64(mainPhotoFile);
+        const prompt = "Analisis gambar ini. Identifikasi produk. Buat 1 kalimat deskripsi menarik & konsep foto estetik. Bahasa Indonesia.";
+        const payload = { contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: b64.split(',')[1] } }] }] };
+        const text = await callApi(payload, true);
+        setProductInfo(text.trim());
+        setShowRecModal(false); 
+    } catch (e) { console.error(e); alert("Gagal."); } finally { setIsGeneratingDesc(false); }
+  };
+
+  const handleSingleRegenerate = async (category, index) => {
+      setGeneratedImages(prev => {
+          const catItems = [...prev[category]];
+          catItems[index] = { ...catItems[index], loading: true };
+          return { ...prev, [category]: catItems };
+      });
+
+      try {
+          const base64Main = await fileToBase64(mainPhotoFile);
+          
+          const modelImagesData = [];
+          if (models.length > 0) {
+              for(let m of models) {
+                  const b64 = await fileToBase64(m.file);
+                  modelImagesData.push({ data: b64, desc: "Wajah Model Referensi" });
+              }
+          }
+          const supportingImagesData = [];
+          for(let p of additionalPhotos) {
+               if (p.file) {
+                   const b64 = await fileToBase64(p.file);
+                   supportingImagesData.push({ data: b64, desc: p.desc || "Foto Pendukung" });
+               }
+          }
+
+          const ratioString = ratio === '9:16' ? 'Vertical 9:16' : ratio === '4:5' ? 'Vertical Feed 4:5' : ratio === '1:1' ? 'Square 1:1' : 'Landscape 16:9';
+          
+          let fullPrompt = buildSmartPrompt(category, productInfo, models, supportingImagesData, index, ratioString, modelStyle, aiModelConfig, poseDescription);
+
+          const currentAdditionalImages = category === 'ugc' ? [...modelImagesData, ...supportingImagesData] : [...supportingImagesData];
+          const url = await generateImageToImageAPI(fullPrompt, base64Main, currentAdditionalImages);
+          
+          setGeneratedImages(prev => {
+              const catItems = [...prev[category]];
+              catItems[index] = { ...catItems[index], url: url, loading: false, id: Date.now() }; 
+              return { ...prev, [category]: catItems };
+          });
+
+      } catch(e) {
+          console.error(e);
+          setGeneratedImages(prev => {
+              const catItems = [...prev[category]];
+              catItems[index] = { ...catItems[index], loading: false }; 
+              return { ...prev, [category]: catItems };
+          });
+      }
+  };
+
+  const runGenerationProcess = async () => {
+    setLoading(true);
+    setResultsReady(true);
+    
+    const init = (cat) => Array(4).fill(0).map((_,i) => ({ id: Math.random(), url: '', category: cat, loading: true }));
+    setGeneratedImages({ broll: init('broll'), ugc: init('ugc'), commercial: init('commercial') });
+
+    try {
+        const base64Main = await fileToBase64(mainPhotoFile);
+        const modelImagesData = [];
+        if (models.length > 0) {
+            for(let m of models) {
+                const b64 = await fileToBase64(m.file);
+                modelImagesData.push({ data: b64, desc: "Wajah Model Referensi" });
+            }
+        }
+        const supportingImagesData = [];
+        for(let p of additionalPhotos) {
+             if (p.file) {
+                 const b64 = await fileToBase64(p.file);
+                 supportingImagesData.push({ data: b64, desc: p.desc || "Foto Pendukung" });
+             }
+        }
+        
+        const cats = ['broll', 'ugc', 'commercial'];
+        await Promise.all(cats.map(async (cat) => {
+            const promises = Array(4).fill(0).map(async (_, idx) => {
+                await wait(idx * 100); 
+                
+                const ratioString = ratio === '9:16' ? 'Vertical 9:16' : ratio === '4:5' ? 'Vertical Feed 4:5' : ratio === '1:1' ? 'Square 1:1' : 'Landscape 16:9';
+                
+                let fullPrompt = buildSmartPrompt(cat, productInfo, models, supportingImagesData, idx, ratioString, modelStyle, aiModelConfig, poseDescription);
+                
+                const currentAdditionalImages = cat === 'ugc' ? [...modelImagesData, ...supportingImagesData] : [...supportingImagesData];
+                const url = await generateImageToImageAPI(fullPrompt, base64Main, currentAdditionalImages);
+                setGeneratedImages(prev => {
+                    const list = [...prev[cat]];
+                    list[idx] = { ...list[idx], url: url, loading: false }; 
+                    return { ...prev, [cat]: list };
+                });
+            });
+            return Promise.all(promises);
+        }));
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+  
+  const handleGenerateButton = () => {
+    if (!mainPhotoFile) return alert("Upload foto produk utama dulu ya!");
+    if (!productInfo.trim()) { setShowRecModal(true); return; }
+    runGenerationProcess();
+  };
+
+  const handleSkipRecommendation = () => { setShowRecModal(false); runGenerationProcess(); };
+
+  useEffect(() => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } }, [voState.audioUrl]);
+  
+  const handleGenerateScript = async () => {
+      setVoState(prev => ({ ...prev, loadingScript: true }));
+      const selectedAccentObj = ACCENT_PRESETS.find(a => a.id === voState.accent);
+      const accentName = selectedAccentObj ? selectedAccentObj.name : voState.accent;
+      let accentInstruction = "";
+      if (voState.accent !== 'none') accentInstruction = `INSTRUKSI KHUSUS AKSEN: Gunakan **Bahasa Indonesia** dengan **Logat ${accentName}**.`;
+      
+      let prompt = `Buat naskah voice over pendek (maks 20 detik) untuk video ${voState.category} produk ini. Deskripsi: "${productInfo}". ${accentInstruction}`;
+      try {
+          let payload = { contents: [{ parts: [{ text: prompt }] }] };
+          if(mainPhotoFile) {
+              const b64 = await fileToBase64(mainPhotoFile);
+              payload.contents[0].parts.push({ inlineData: { mimeType: 'image/jpeg', data: b64.split(',')[1] } });
+          }
+          const text = await callApi(payload, true);
+          setVoState(prev => ({ ...prev, script: text.trim(), loadingScript: false, audioUrl: null }));
+      } catch (e) { setVoState(prev => ({ ...prev, script: "Gagal.", loadingScript: false })); }
+  };
+
+  const handleGenerateAudio = async () => {
+      if(!voState.script) return alert("Tulis naskah dulu!");
+      let promptText = voState.script;
+      if (voState.accent && voState.accent !== 'none') {
+          const selectedAccentObj = ACCENT_PRESETS.find(a => a.id === voState.accent);
+          const accentName = selectedAccentObj ? selectedAccentObj.name.replace(/[\u0080-\uFFFF]/gu,"").trim() : ""; 
+          promptText = `Say in ${accentName} accent: "${voState.script}"`;
+      }
+
+      if(audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      setVoState(prev => ({ ...prev, loadingAudio: true, audioUrl: null })); 
+      try {
+          const payload = { contents: [{ parts: [{ text: promptText }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voState.voice } } } }, model: "gemini-2.5-flash-preview-tts" };
+          const { audioData, sampleRate } = await callTtsApi(payload);
+          const blob = pcmToWav(base64ToArrayBuffer(audioData), sampleRate);
+          const url = URL.createObjectURL(blob);
+          setVoState(prev => ({ ...prev, audioUrl: url, loadingAudio: false }));
+      } catch (e) { alert("Gagal."); setVoState(prev => ({ ...prev, loadingAudio: false })); }
+  };
+
+  const toggleAudio = () => {
+      if(!voState.audioUrl) return;
+      if(!audioRef.current) audioRef.current = new Audio(voState.audioUrl);
+      if(voState.isPlaying) { audioRef.current.pause(); setVoState(p=>({...p, isPlaying:false})); }
+      else { audioRef.current.play(); setVoState(p=>({...p, isPlaying:true})); audioRef.current.onended = () => setVoState(p=>({...p, isPlaying:false})); }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-300 font-sans pb-20 selection:bg-blue-500/30">
+      <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3">
+              <div className="bg-blue-600 p-2 rounded-lg text-white"><Zap size={20} fill="currentColor"/></div>
+              <div>
+                  <h1 className="text-white font-bold text-lg tracking-tight">GENERATOR KETUA RT O2 <span className="text-blue-500">SETIA BATIN</span></h1>
+                  <p className="text-[10px] text-slate-500 font-medium">Tools Sulap Gambar Ampuh Untuk Affiliate By Ajat Sudrajat</p>
+              </div>
+          </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="md:col-span-5 space-y-2">
+            <StepPanel number="1" title="Upload Produk" icon={Upload}>
+                <div className="relative aspect-square bg-slate-950 rounded-lg border-2 border-dashed border-slate-800 hover:border-blue-500/50 transition-all flex flex-col items-center justify-center group cursor-pointer overflow-hidden">
+                    {mainPhoto ? (
+                        <>
+                            <img src={mainPhoto} className="w-full h-full object-contain p-4"/>
+                            <button onClick={(e)=>{e.stopPropagation(); setMainPhoto(null); setMainPhotoFile(null);}} className="absolute top-2 right-2 bg-red-500/80 p-1.5 rounded text-white hover:bg-red-500 z-20"><X size={14}/></button>
+                        </>
+                    ) : (
+                        <>
+                            <Upload size={32} className="text-slate-600 mb-2 group-hover:text-blue-500 transition-colors"/>
+                            <p className="text-xs text-slate-500 font-medium">Klik Upload Foto Utama</p>
+                        </>
+                    )}
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handlePhotoUpload(e, 'main')} disabled={!!mainPhoto}/>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">Foto Pendukung (Opsional)</p>
+                    {additionalPhotos.map(p => (
+                        <div key={p.id} className="flex gap-2 items-center bg-slate-950 p-2 rounded border border-slate-800">
+                            <img src={p.url} className="w-8 h-8 rounded object-cover"/>
+                            <input placeholder="Keterangan (misal: Background)" className="flex-1 bg-transparent text-xs outline-none" onChange={e => { const newPhotos = additionalPhotos.map(ap => ap.id === p.id ? {...ap, desc: e.target.value} : ap); setAdditionalPhotos(newPhotos); }}/>
+                            <button onClick={() => handleRemoveAdditional(p.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={14}/></button>
+                        </div>
+                    ))}
+                    {additionalPhotos.length < 2 && (
+                        <label className="flex items-center justify-center gap-2 py-2 border border-slate-800 rounded text-xs text-slate-500 hover:bg-slate-800 cursor-pointer"><Plus size={12}/> Tambah Foto Lain<input type="file" className="hidden" onChange={e => { const file = e.target.files[0]; if(file) setAdditionalPhotos([...additionalPhotos, {id: Date.now(), url: URL.createObjectURL(file), file: file, desc: ''}]); }}/></label>
+                    )}
+                </div>
+            </StepPanel>
+
+            <StepPanel number="2" title="Jelaskan Produk Anda & Konsep Foto" icon={FileText}>
+                <div className="animate-in fade-in">
+                    <div className="flex justify-end mb-2">
+                        <button onClick={handleApplyRecommendation} disabled={isGeneratingDesc} className="text-[10px] text-blue-400 flex items-center gap-1 hover:text-white">{isGeneratingDesc ? <RefreshCw size={10} className="animate-spin"/> : <Sparkles size={10}/>} {isGeneratingDesc ? 'Menganalisis...' : 'Auto-Generate'}</button>
+                    </div>
+                    <textarea value={productInfo} onChange={e => setProductInfo(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none h-24 resize-none" placeholder="Jelaskan produkmu..."/>
+                    <div className="mt-3">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Rasio Gambar</label>
+                        <select value={ratio} onChange={e=>setRatio(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs outline-none">
+                            <option value="9:16">9:16 (Story/Tiktok)</option><option value="4:5">4:5 (Feed Portrait)</option><option value="1:1">1:1 (Feed/Square)</option><option value="16:9">16:9 (Landscape/Youtube)</option>
+                        </select>
+                    </div>
+                </div>
+            </StepPanel>
+
+            <StepPanel number="3" title="Model AI" icon={User}>
+                {models.length < 2 && (
+                    <label className="group block w-full text-center py-4 border-2 border-dashed border-slate-700 rounded-xl text-xs text-slate-400 cursor-pointer hover:border-blue-500 hover:bg-slate-900/50 hover:text-blue-400 transition-all mb-4 relative overflow-hidden">
+                        <div className="flex flex-col items-center justify-center gap-1 relative z-10"><Plus size={16} className="mb-1 text-slate-500 group-hover:text-blue-500 transition-colors"/><span className="font-bold">UPLOAD WAJAH MODEL SENDIRI</span><span className="text-[10px] text-slate-600 group-hover:text-slate-500">Agar wajah di hasil foto mirip kamu!</span></div>
+                        <input type="file" className="hidden" onChange={e => handlePhotoUpload(e, 'model')}/>
+                    </label>
+                )}
+                {models.length > 0 ? (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                            {models.map(m => (<div key={m.id} className="relative aspect-square bg-slate-950 rounded border border-slate-800 group"><img src={m.url} className="w-full h-full object-cover"/><button onClick={() => setModels(models.filter(x => x.id !== m.id))} className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white p-1 rounded-full transition-colors"><X size={10}/></button></div>))}
+                        </div>
+                        <div className="space-y-4 border-t border-slate-800 pt-4">
+                            {models.length > 1 ? (
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-blue-400 uppercase mb-2 flex items-center gap-1"><User size={10} /> Detail Pakaian & Aksesoris Per Model</label>
+                                    {models.map((m, index) => (
+                                        <div key={m.id} className="flex gap-3 mb-3 p-2 border border-slate-800 rounded bg-slate-900/50">
+                                            <img src={m.url} className="w-12 h-12 object-cover rounded border border-slate-700" />
+                                            <div className="flex-1">
+                                                <span className="text-[9px] text-slate-500 uppercase font-bold block mb-1">Model {index + 1}</span>
+                                                <textarea 
+                                                    value={m.styleDesc || ''} 
+                                                    onChange={(e) => updateModelDesc(m.id, e.target.value)}
+                                                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white outline-none resize-none h-16 focus:border-blue-500"
+                                                    placeholder={`Pakaian untuk Model ${index + 1}...`}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                                    <label className="text-[10px] font-bold text-blue-400 uppercase mb-2 flex items-center gap-1"><User size={10} /> Detail Pakaian & Aksesoris</label>
+                                    <textarea 
+                                        value={models[0].styleDesc || modelStyle} 
+                                        onChange={e => {
+                                            setModelStyle(e.target.value); 
+                                            updateModelDesc(models[0].id, e.target.value);
+                                        }} 
+                                        placeholder="Contoh: Mengenakan baju kaos putih..." 
+                                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white outline-none resize-none h-20 focus:border-blue-500" 
+                                    />
+                                </div>
+                            )}
+                            
+                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                                <label className="text-[10px] font-bold text-green-400 uppercase mb-2 flex items-center gap-1"><Film size={10} /> Gaya Pose Model</label>
+                                <textarea value={poseDescription} onChange={e=>setPoseDescription(e.target.value)} placeholder="Contoh: Tersenyum lebar..." className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white outline-none resize-none h-20 focus:border-green-500" />
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                         <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 mb-4">
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div><label className="text-[10px] font-bold text-slate-500 block mb-1.5 uppercase">Gender</label><div className="relative"><select className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none appearance-none focus:border-blue-500" value={aiModelConfig.gender} onChange={e=>setAiModelConfig({...aiModelConfig, gender: e.target.value})}><option value="auto">Otomatis</option><option value="female">Wanita</option><option value="male">Pria</option></select><ChevronDown size={12} className="absolute right-3 top-3 text-slate-500 pointer-events-none"/></div></div>
+                                <div><label className="text-[10px] font-bold text-slate-500 block mb-1.5 uppercase">Usia</label><div className="relative"><select className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white outline-none appearance-none focus:border-blue-500" value={aiModelConfig.age} onChange={e=>setAiModelConfig({...aiModelConfig, age: e.target.value})}><option>Anak-anak</option><option>Remaja</option><option>Dewasa</option><option>Orang Tua</option></select><ChevronDown size={12} className="absolute right-3 top-3 text-slate-500 pointer-events-none"/></div></div>
+                            </div>
+                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-900 rounded-lg border border-slate-700 hover:border-blue-500 transition-colors group"><div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${aiModelConfig.hijab ? 'bg-blue-600 border-blue-600' : 'border-slate-500'}`}>{aiModelConfig.hijab && <Check size={10} className="text-white"/>}</div><input type="checkbox" checked={aiModelConfig.hijab} onChange={e=>setAiModelConfig({...aiModelConfig, hijab: e.target.checked})} className="hidden"/><span className="text-xs text-slate-300 group-hover:text-white font-medium">Model Menggunakan Hijab?</span></label>
+                        </div>
+                    </div>
+                )}
+            </StepPanel>
+
+            <button onClick={handleGenerateButton} disabled={loading} className={`w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-slate-800 text-slate-500 cursor-wait opacity-50' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'}`}>{loading ? <RefreshCw className="animate-spin" size={16}/> : <Sparkles size={16}/>}{loading ? "PAK RT LAGI MIKIR..." : "GENERATE ASET"}</button>
+        </div>
+
+        <div className="md:col-span-7 space-y-8"> {/* UPDATED TO 7 */}
+            {['broll', 'ugc', 'commercial'].map((cat) => (
+                <div key={cat} className="space-y-3">
+                    <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                        {cat === 'broll' && <Video size={16} className="text-yellow-500"/>}
+                        {cat === 'ugc' && <User size={16} className="text-green-500"/>}
+                        {cat === 'commercial' && <LayoutGrid size={16} className="text-purple-500"/>}
+                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">{cat} Photos</h2>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                        {resultsReady ? generatedImages[cat].map((item, idx) => (
+                            <ResultCard 
+                                key={item.id} 
+                                item={item} 
+                                onViewImage={setViewImageUrl} 
+                                productInfo={productInfo} 
+                                selectedRatio={ratio} 
+                                onRegenerate={() => handleSingleRegenerate(cat, idx)} 
+                            />
+                        )) : (
+                            Array(4).fill(0).map((_, i) => (
+                                <div key={i} 
+                                     className="shrink-0 bg-slate-900/50 rounded-lg border border-dashed border-slate-800 flex items-center justify-center"
+                                     // DYNAMIC WIDTH UNTUK PLACEHOLDER JUGA
+                                     style={{ width: ratio === '16:9' ? '460px' : ratio === '1:1' ? '340px' : '280px', aspectRatio: ratio.replace(':','/') }}
+                                >
+                                    <ImageIcon className="text-slate-800" size={24}/>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            ))}
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mt-8 transition-all duration-300">
+                <div className="flex justify-between items-center cursor-pointer group" onClick={() => setIsStudioOpen(!isStudioOpen)}>
+                    <div className="flex items-center gap-3"><div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500/20 transition-colors"><Mic size={20}/></div><div><h2 className="text-white font-bold group-hover:text-indigo-400 transition-colors">Voice Over Studio</h2><p className="text-xs text-slate-500">Buat narasi suara untuk videomu</p></div></div>
+                    <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-wider"><span>{isStudioOpen ? 'Tutup Studio' : 'Buka Studio'}</span><ChevronDown className={`transform transition-transform duration-300 ${isStudioOpen ? 'rotate-180' : 'rotate-0'}`} /></div>
+                </div>
+
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden transition-all duration-500 ease-in-out ${isStudioOpen ? 'max-h-[1200px] opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'}`}>
+                    <div className="space-y-3">
+                        <div className="relative">
+                            <textarea value={voState.script} onChange={e => setVoState({...voState, script: e.target.value, audioUrl: null})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm h-32 resize-none focus:border-indigo-500 outline-none" placeholder="Tulis naskah di sini atau klik 'Buat Naskah' untuk generate otomatis..."/>
+                            <button onClick={handleGenerateScript} disabled={voState.loadingScript} className="absolute bottom-2 right-2 text-[10px] bg-slate-800/80 hover:bg-slate-700 text-indigo-400 hover:text-white px-2 py-1 rounded flex items-center gap-1 backdrop-blur border border-slate-700 transition-colors">{voState.loadingScript ? <RefreshCw className="animate-spin" size={10}/> : <Wand2 size={10}/>} Buat Naskah</button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                            <select className="w-full bg-slate-950 border border-slate-800 text-xs rounded p-2 text-white outline-none" value={voState.category} onChange={e=>setVoState({...voState, category: e.target.value})}><option value="broll">Gaya Estetik (B-Roll)</option><option value="ugc">Gaya Testimoni (UGC)</option><option value="commercial">Gaya Promo (Hard Sell)</option></select>
+                            <select className="w-full bg-slate-950 border border-slate-800 text-xs rounded p-2 text-white outline-none" value={voState.accent} onChange={e=>setVoState({...voState, accent: e.target.value})}>{ACCENT_PRESETS.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+                            <select className="w-full bg-slate-950 border border-slate-800 text-xs rounded p-2 text-white outline-none" value={voState.voice} onChange={e=>setVoState({...voState, voice: e.target.value})}>{ttsVoices.map(v => (<option key={v.id} value={v.id}>{v.name}</option>))}</select>
+                            <button onClick={handleGenerateAudio} disabled={voState.loadingAudio} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded flex items-center justify-center gap-2 w-full">{voState.loadingAudio ? <RefreshCw className="animate-spin" size={14}/> : <Volume2 size={14}/>} Buat Audio</button>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col justify-center items-center bg-slate-950 border border-slate-800 rounded-lg p-6 text-center relative overflow-hidden">
+                         {voState.audioUrl && (<div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none"><div className="flex gap-1 items-end h-16">{[...Array(10)].map((_, i) => (<div key={i} className={`w-2 bg-indigo-500 rounded-t ${voState.isPlaying ? 'animate-[bounce_1s_infinite]' : 'h-2'}`} style={{animationDelay: `${i * 0.1}s`, height: voState.isPlaying ? '60%' : '10%'}}></div>))}</div></div>)}
+                        {voState.audioUrl ? (
+                            <div className="space-y-4 w-full relative z-10">
+                                <div className="flex justify-center"><button onClick={toggleAudio} className="w-16 h-16 rounded-full bg-indigo-500 hover:bg-indigo-400 flex items-center justify-center text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:scale-105 active:scale-95">{voState.isPlaying ? <div className="w-4 h-4 bg-white rounded-sm"/> : <Play size={24} fill="white" className="ml-1"/>}</button></div>
+                                <div><div className="text-xs text-indigo-400 font-mono uppercase tracking-widest font-bold">{voState.isPlaying ? "Playing..." : "Audio Ready"}</div><div className="text-[10px] text-slate-500 mt-1">Durasi: Auto</div></div>
+                                <a href={voState.audioUrl} download="voiceover.wav" className="block w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded border border-slate-700 transition-colors flex items-center justify-center gap-2"><Download size={14}/> Download WAV</a>
+                            </div>
+                        ) : (
+                            <div className="text-slate-600 space-y-2"><MonitorPlay size={32} className="mx-auto opacity-50"/><p className="text-xs">Audio akan muncul di sini</p></div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+      </main>
+
+      <footer className="mt-12 border-t border-slate-800 py-6 text-center">
+           <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">
+               ajat sudrajat | generator sulap foto ampuh | version 0.1.20 full engine
+           </p>
+      </footer>
+
+      {viewImageUrl && (
+          <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setViewImageUrl(null)}>
+              <button className="absolute top-4 right-4 text-white hover:text-red-500"><X size={32}/></button>
+              <img src={viewImageUrl} className="max-h-[90vh] max-w-full rounded shadow-2xl" onClick={e => e.stopPropagation()}/>
+          </div>
+      )}
+
+      {showRecModal && (
+          <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-gray-800 border border-blue-500 w-full max-w-lg rounded-xl p-6 shadow-2xl">
+                  <h3 className="text-xl font-bold text-blue-400 mb-4">Rekomendasi Pengisian</h3>
+                  <p className="text-gray-300 mb-6">Kolom "Jelaskan Produk & Konsep Foto" sebaiknya diisi agar hasilnya lebih spesifik dan sesuai kampanye Anda.</p>
+                  <p className="text-gray-400 text-sm mb-6">Jika Anda mengabaikan, AI akan membuatkan deskripsi serta konsep foto secara otomatis berdasarkan gambar produk.</p>
+                  <div className="flex justify-end gap-4">
+                      <button onClick={handleSkipRecommendation} className="bg-gray-600 text-white font-bold py-2 px-6 rounded-full hover:bg-gray-700 transition-colors">Abaikan</button>
+                      <button onClick={handleApplyRecommendation} disabled={isGeneratingDesc} className="bg-blue-600 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-2">{isGeneratingDesc ? <RefreshCw size={16} className="animate-spin"/> : <Sparkles size={16}/>}<span>{isGeneratingDesc ? 'Menganalisis...' : 'Terapkan Rekomendasi'}</span></button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* POPUP 1: WARNING */}
+      {showWarning && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border-2 border-red-600 rounded-2xl max-w-xs w-full p-5 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-300">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 animate-pulse"></div>
+              <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="bg-red-500/10 p-3 rounded-full border border-red-500/20">
+                      <AlertTriangle size={32} className="text-red-500 animate-pulse" />
+                  </div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-wider drop-shadow-lg">PERINGATAN!!</h2>
+                  <div className="space-y-3 text-slate-300 border-t border-b border-slate-800 py-3">
+                      <p className="font-medium leading-relaxed text-xs">
+                          jangan share tools ini , tanpa ada izin dari ajat dan jika ketahuan share tanpa izin , bisa aja link saya hapus permanen dari sini dan tidak bisa di gunakan lagi.
+                      </p>
+                      <p className="font-bold text-white text-sm">
+                          mohon kerja sama nya
+                      </p>
+                  </div>
+                  <button 
+                      onClick={handleWarningDismiss}
+                      className="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-red-900/50 flex items-center justify-center gap-2 text-sm"
+                  >
+                      <span>SAYA MENGERTI</span>
+                      <Check size={16} />
+                  </button>
+              </div>
+          </div>
+        </div>
+      )}
+      
+    </div>
+  );
+};
+
+/* ================================================================================
+   BAGIAN 2: KODE ASLI "POV ME" (ProductPhotoGen)
+   Semua fungsi dan logika dipertahankan 100% utuh.
+================================================================================
+*/
+
+const ProductPhotoGen = () => {
+  const [productImage, setProductImage] = useState(null);
+  const [mainConcept, setMainConcept] = useState(''); 
+  const [aspectRatio, setAspectRatio] = useState('9:16');
+  const [handStyle, setHandStyle] = useState('1_hand_point');
+  
+  // State untuk Foto Pendukung
+  const [additionalPhotos, setAdditionalPhotos] = useState([]);
+
+  // State results sekarang akan menyimpan 'seed' juga
+  const [results, setResults] = useState([]); 
+  
+  const [globalLoading, setGlobalLoading] = useState(false); 
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Ukuran file maksimal 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProductImage(reader.result);
+        setError('');
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+  };
+
+  const handleAdditionalPhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Ukuran file maksimal 5MB");
+        return;
+      }
+      setAdditionalPhotos([...additionalPhotos, { id: Date.now(), url: URL.createObjectURL(file), file: file, desc: '' }]);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveAdditional = (id) => {
+      setAdditionalPhotos(prev => prev.filter(p => p.id !== id));
+  };
+
+  const removeImage = () => {
+    setProductImage(null);
+    setResults([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownload = (imgData, index) => {
+    if (!imgData) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    // UPDATE: Menyesuaikan resolusi download dengan Aspect Ratio yang dipilih user
+    // Sebelumnya hardcoded 1080x1092, sekarang dinamis.
+    let targetWidth, targetHeight;
+
+    switch (aspectRatio) {
+        case '9:16':
+            targetWidth = 1080;
+            targetHeight = 1920; // Portrait Penuh
+            break;
+        case '16:9':
+            targetWidth = 1920;
+            targetHeight = 1080; // Landscape
+            break;
+        case '1:1':
+        default:
+            targetWidth = 1080;
+            targetHeight = 1080; // Square
+            break;
+    }
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    img.onload = () => {
+        const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
+        const x = (targetWidth - img.width * scale) / 2;
+        const y = (targetHeight - img.height * scale) / 2;
+
+        ctx.fillStyle = '#171717';
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+        
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+        const link = document.createElement('a');
+        link.download = `prolens-result-${index+1}-${targetWidth}x${targetHeight}.png`; // Changed to png
+        link.href = canvas.toDataURL('image/png', 1.0); // Changed to image/png
+        link.click();
+    };
+    img.src = imgData;
+  };
+
+  // UPDATE: Menerima 'seed' dan 'additionalImages' sebagai parameter eksternal
+  const fetchSingleImage = async (base64Data, mimeType, prompt, styleDesc, seed, additionalImages = []) => {
+    // Menggunakan seed yang diberikan untuk konsistensi (edit) atau variasi (generate baru)
+    const fullPrompt = `${prompt}\n\n**VARIATION INSTRUCTION:** ${styleDesc}\n**RANDOM SEED:** ${seed}`;
+    
+    // Construct parts payload
+    const parts = [
+      { text: fullPrompt },
+      { inlineData: { mimeType: mimeType, data: base64Data } }
+    ];
+
+    // Add additional images to payload if present
+    if (additionalImages && additionalImages.length > 0) {
+      additionalImages.forEach(img => {
+          if (img.data) {
+              parts.push({ inlineData: { mimeType: 'image/png', data: img.data } });
+          }
+      });
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: { responseModalities: ["IMAGE"] }
+        }),
+      }
+    );
+
+    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+    const result = await response.json();
+    const data = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+    if (!data) throw new Error("No image data");
+    return `data:image/jpeg;base64,${data}`;
+  };
+
+  const generateInitialPhotos = async () => {
+    if (!productImage || !mainConcept) {
+      setError("Mohon upload foto dan isi konsep.");
+      return;
+    }
+
+    setGlobalLoading(true);
+    setError('');
+    
+    let dynamicVariations = [];
+
+    // LOGIKA VARIASI UNTUK SETIAP GAYA
+    if (handStyle === '2_hand') {
+      dynamicVariations = [
+        "SCENARIO 1 (FOLDED): IF CLOTHING: Show item FOLDED NEATLY held by two hands. KEEP COLLAR VISIBLE. IF NOT FASHION: Standard Hold.",
+        "SCENARIO 2 (SPREAD - STRICT): IF CLOTHING: Hold item UP by shoulders/top corners to spread it out. **CRITICAL: MUST SHOW FULL SLEEVES (Do not crop them). KEEP ORIGINAL COLLAR SHAPE EXACTLY.** IF NOT FASHION: Dramatic Hold.",
+        "SCENARIO 3 (HANGER - STRICT): IF CLOTHING: Show item on a HANGER held by a hand. **CRITICAL: Natural gravity drape. SLEEVES must hang naturally.** IF NOT FASHION: Lifestyle Hold.",
+        "SCENARIO 4 (DETAIL): IF CLOTHING: ZOOM IN macro shot on fabric texture/print. Hands holding fabric. IF NOT FASHION: Macro shot."
+      ];
+    } else if (handStyle === 'unboxing') {
+      // UPDATE: Menambahkan instruksi visibilitas Merek/Logo
+      dynamicVariations = [
+        "SCENARIO 1 (LIFTING LID): POV hands lifting the lid of a premium box. The product sits inside. **CRITICAL: BRAND LOGO on the product MUST BE VISIBLE and facing the camera.** Soft lighting.",
+        "SCENARIO 2 (TOP DOWN OPEN): High angle view looking down into an open package/box. Product is surrounded by aesthetic filler. **CRITICAL: Focus clearly on the LABEL/BRAND.**",
+        "SCENARIO 3 (TAKING OUT): Hands physically lifting the product OUT of the packaging box. **CRITICAL: Hands must NOT cover the Brand Logo. Logo must be the focal point.**",
+        "SCENARIO 4 (TEARING WRAP): Hands tearing open a shipping mailer or removing protective wrapping. **CRITICAL: The reveal MUST show the Brand Logo clearly.**"
+      ];
+    } else if (handStyle === '1_hand_point') {
+      // UPDATE: Prompt khusus 1 Tangan Tunjuk agar lebih realistis untuk fashion & benda mati
+      dynamicVariations = [
+        "SCENARIO 1 (REVIEWER POV): One hand holds the item naturally (IF FASHION: hold by the top collar/shoulder or use a hanger so fabric drapes down naturally with gravity). The other hand's index finger points at the center design. Bright clean lighting.",
+        "SCENARIO 2 (DETAIL FOCUS): Closer shot. Holding hand supports the item securely. Pointing finger almost touches the main logo or texture. High contrast dramatic shadows.",
+        "SCENARIO 3 (CASUAL LIFESTYLE): Natural daylight. Item is held up casually against a gently blurred background. Clear pointing gesture from the second hand. Highly realistic skin texture.",
+        "SCENARIO 4 (STUDIO PROMO): Clean Studio setup. Item held prominently in the center. Sharp and precise pointing gesture directing the viewer's eye exactly to the product's main feature."
+      ];
+    } else {
+      dynamicVariations = [
+        "Variation A: Cinematic Lighting. Focus on the product being pointed at. Warm tones.",
+        "Variation B: High Contrast / Dramatic. Sharp shadows, cool tones. Finger pointing clearly.",
+        "Variation C: Natural Sunlight. Bright, airy, outdoor feel. Hand looks natural.",
+        "Variation D: Clean Studio. Minimalist background, focus on product details."
+      ];
+    }
+    
+    // Generate SEED acak di awal untuk setiap slot
+    const initialSlots = dynamicVariations.map((style, idx) => ({
+      id: idx,
+      img: null,
+      loading: true,
+      prompt: mainConcept, 
+      styleDesc: style,
+      seed: Math.floor(Math.random() * 999999999), // Simpan seed ini
+      isEditing: false
+    }));
+    setResults(initialSlots);
+
+    try {
+      const base64Data = productImage.split(',')[1];
+      const mimeType = productImage.split(';')[0].split(':')[1];
+      const basePrompt = buildBasePrompt(handStyle, aspectRatio);
+
+      // Process Additional Images
+      const supportingImagesData = [];
+      for(let p of additionalPhotos) {
+          if (p.file) {
+              const b64 = await fileToBase64(p.file); 
+              supportingImagesData.push({ data: b64.split(',')[1], desc: p.desc || "Supporting Image" });
+          }
+      }
+
+      // Add context instruction for additional images
+      let extendedContext = mainConcept;
+      if (supportingImagesData.length > 0) {
+          supportingImagesData.forEach((img, i) => {
+               if (img.desc && img.desc.toLowerCase().match(/latar|background|bg|backdrop|tempat|lokasi/)) {
+                   extendedContext += ` \n(INSTRUCTION: USE IMAGE ${i+2} AS REFERENCE FOR BACKGROUND/SCENE: ${img.desc})`; 
+               } else {
+                   extendedContext += ` \n(CONTEXT IMAGE ${i+2}: ${img.desc})`;
+               }
+          });
+      }
+
+      const promises = initialSlots.map(async (slot, idx) => {
+        try {
+           // Pass slot.seed and supportingImagesData ke fungsi fetch
+           const imgData = await fetchSingleImage(base64Data, mimeType, `${basePrompt} **CONTEXT:** ${extendedContext}`, slot.styleDesc, slot.seed, supportingImagesData);
+           setResults(prev => {
+             const newArr = [...prev];
+             newArr[idx] = { ...newArr[idx], img: imgData, loading: false };
+             return newArr;
+           });
+        } catch (e) {
+           console.error(e);
+           setResults(prev => {
+             const newArr = [...prev];
+             newArr[idx] = { ...newArr[idx], loading: false, error: "Gagal" };
+             return newArr;
+           });
+        }
+      });
+
+      await Promise.all(promises);
+      
+    } catch (err) {
+      console.error(err);
+      setError("Terjadi kesalahan sistem.");
+    } finally {
+      setGlobalLoading(false); 
+    }
+  };
+
+  // UPDATE: Menambahkan parameter isEdit
+  const handleRegenerateSingle = async (index, isEdit = false) => {
+    const slot = results[index];
+    if (!productImage) return;
+
+    setResults(prev => {
+      const newArr = [...prev];
+      newArr[index] = { ...newArr[index], loading: true, error: null };
+      return newArr;
+    });
+
+    try {
+      const base64Data = productImage.split(',')[1];
+      const mimeType = productImage.split(';')[0].split(':')[1];
+      
+      // KITA HANYA AMBIL BASE PROMPT JIKA BUKAN EDIT
+      // JIKA EDIT, KITA BUAT PROMPT BARU AGAR TIDAK BENTROK
+      const basePrompt = buildBasePrompt(handStyle, aspectRatio);
+
+      // Process Additional Images again for single regeneration
+      const supportingImagesData = [];
+      for(let p of additionalPhotos) {
+          if (p.file) {
+              const b64 = await fileToBase64(p.file); 
+              supportingImagesData.push({ data: b64.split(',')[1], desc: p.desc || "Supporting Image" });
+          }
+      }
+
+      // Add context instruction for additional images
+      let extendedContext = slot.prompt; // Start with current specific prompt
+      let contextInstruction = "";
+
+      if (supportingImagesData.length > 0) {
+          supportingImagesData.forEach((img, i) => {
+               if (img.desc && img.desc.toLowerCase().match(/latar|background|bg|backdrop|tempat|lokasi/)) {
+                   contextInstruction += ` \n(INSTRUCTION: USE IMAGE ${i+2} AS REFERENCE FOR BACKGROUND/SCENE: ${img.desc})`; 
+               } else {
+                   contextInstruction += ` \n(CONTEXT IMAGE ${i+2}: ${img.desc})`;
+               }
+          });
+      }
+
+      // LOGIKA SEED PENTING:
+      let currentSeed = isEdit ? slot.seed : Math.floor(Math.random() * 999999999);
+      
+      if (!isEdit) {
+         setResults(prev => {
+            const newArr = [...prev];
+            newArr[index] = { ...newArr[index], seed: currentSeed };
+            return newArr;
+         });
+      }
+
+      let finalPrompt = "";
+
+      if (isEdit) {
+          // --- LOGIKA EDIT YANG DIPERBAIKI ---
+          // Kita membuang 'basePrompt' yang kaku agar AI nurut sama user.
+          finalPrompt = `
+            You are a professional product photographer editing a shot.
+            **TASK:** Modify the pose/action according to the USER INSTRUCTION below strictly.
+            **TECH SPECS:** Sony A7R IV, 8k, Ultra-realistic.
+            **OUTPUT RATIO:** ${aspectRatio}
+            
+            **USER INSTRUCTION (ABSOLUTE PRIORITY):** "${slot.prompt}"
+            
+            **STRICT RULES FOR EDITING:**
+            1. **FOLLOW THE HAND/POSE INSTRUCTION:** If the user says "hold collar", MOVE the hands to the collar. Do NOT stay in the old pose.
+            2. **IGNORE DEFAULT PRESETS:** Forget standard unboxing or holding poses. Only do what the User Instruction says.
+            3. **CONSISTENCY:** Keep the product look, lighting, and background style consistent with the original vibe (using the provided Seed).
+            
+            **CONTEXT:** ${contextInstruction}
+          `;
+      } else {
+          // If refresh/generate new, use standard base prompt + concept
+          finalPrompt = `${basePrompt} **CONTEXT:** ${slot.prompt} ${contextInstruction}`;
+      }
+
+      const imgData = await fetchSingleImage(
+        base64Data, 
+        mimeType, 
+        finalPrompt, 
+        isEdit ? "" : slot.styleDesc, // Style preset dimatikan saat edit
+        currentSeed,
+        supportingImagesData
+      );
+
+      setResults(prev => {
+        const newArr = [...prev];
+        newArr[index] = { ...newArr[index], img: imgData, loading: false };
+        return newArr;
+      });
+    } catch (e) {
+      setResults(prev => {
+        const newArr = [...prev];
+        newArr[index] = { ...newArr[index], loading: false, error: "Gagal Refresh" };
+        return newArr;
+      });
+    }
+  };
+
+  const toggleEditMode = (index) => {
+    setResults(prev => {
+      const newArr = [...prev];
+      newArr[index] = { ...newArr[index], isEditing: !newArr[index].isEditing };
+      return newArr;
+    });
+  };
+
+  const handlePromptChange = (index, newText) => {
+    setResults(prev => {
+      const newArr = [...prev];
+      newArr[index] = { ...newArr[index], prompt: newText };
+      return newArr;
+    });
+  };
+
+  const handleSubmitEdit = (index) => {
+    toggleEditMode(index); 
+    // Panggil regenerate dengan flag isEdit = true
+    handleRegenerateSingle(index, true); 
+  };
+
+  const buildBasePrompt = (hStyle, ratio) => {
+    let handPrompt = "";
+    if (hStyle === '1_hand_point') {
+      handPrompt = `
+        **TARGET COMPOSITION (MANDATORY):**
+        - **SCENE:** Two visible hands interacting with the product.
+        - **HOLDING HAND:** One hand holds the product naturally. **IF CLOTHING/FASHION:** You MUST hold it by the top collar/shoulder so the fabric hangs naturally with gravity, OR hold it on a clothing hanger. **IF SOLID OBJECT:** Hold from the bottom/side.
+        - **POINTING HAND:** The other hand's index finger MUST be pointing clearly at the product's main feature or logo.
+        - **PHYSICS & ANATOMY:** Fabric MUST drape realistically without bunching up unnaturally. Hands MUST have exactly 5 fingers, realistic skin texture, and absolutely NO melting or morphing into the product's fabric/surface.
+      `;
+    } else if (hStyle === 'unboxing') {
+      // UPDATE: Prompt Unboxing yang lebih ketat soal logo
+      handPrompt = `
+        **TARGET COMPOSITION (UNBOXING):**
+        - **SCENE:** The product is being taken out of a box/package.
+        - **HANDS:** Two hands interacting with packaging (box, tissue paper, mailer).
+        - **ACTION:** Opening, lifting lid, or peeling sticker.
+        - **PACKAGING:** Generate a realistic generic box/package that fits the product size.
+        - **BRAND VISIBILITY (HIGHEST PRIORITY):** The angle MUST show the product's BRAND/LOGO clearly facing the camera. Do not hide the logo with fingers or packaging flaps.
+      `;
+    } else {
+      handPrompt = `
+        **TARGET COMPOSITION (MANDATORY):**
+        - **BOTH HANDS:** MUST be visible holding the product.
+        - **SYMMETRY:** Hands are holding the item up (e.g. by shoulders for shirts, or sides for boxes).
+        - **IGNORE ORIGINAL GRIP:** Discard the grip from the source image. Create a NEW grip.
+      `;
+    }
+
+    return `
+      You are a professional product photographer using AI to re-stage a product.
+      
+      **TASK: RE-STAGING & POSE REPLACEMENT**
+      1. **ANALYZE:** Identify the PRODUCT OBJECT in the input image. (Texture, Logo, Shape).
+      2. **ISOLATE:** Mentally cut out the product. Ignore the original background and the original hands holding it.
+      3. **RECONSTRUCT:** Place this product into a NEW scene with the NEW POSE defined below.
+      
+      **STRICT CONSTRAINTS (DO NOT VIOLATE):**
+      - **DO NOT COVER THE PRODUCT:** Hands must hold the product by the EDGES, BOTTOM, or BACK. Do not block the label, logo, or main pattern with fingers.
+      - **DO NOT COPY THE INPUT POSE.** If the input shows 1 hand, you MUST generate 2 hands if requested.
+      - **REMOVE ORIGINAL HANDS:** The hands in the input image are "noise". Do not reproduce them. Generate NEW hands with realistic skin texture.
+      - **NO GHOSTING:** Do not blend the old hands with the new ones.
+      
+      **FASHION SPECIFIC:**
+      - If the product is clothing, do NOT simply copy the wrinkles/folds from the input if the new pose (e.g. Spread) requires it to be flat. Re-simulate the fabric physics for the new pose.
+      
+      ${handPrompt}
+      
+      **TECH SPECS:** Sony A7R IV, 8k, Ultra-realistic, Depth of Field.
+      **OUTPUT RATIO:** ${ratio}
+    `;
+  };
+
+  const getAspectRatioClasses = () => {
+    switch (aspectRatio) {
+      case '9:16': return 'aspect-[9/16]'; 
+      case '16:9': return 'aspect-[16/9]';    
+      case '1:1': return 'aspect-square';  
+      default: return 'aspect-square';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-900 text-gray-100 font-sans selection:bg-indigo-500 selection:text-white">
+      {/* REVISI: Header ini sekarang menggunakan 'relative' bukan 'sticky' 
+          supaya tidak bentrok dengan Tab Bar utama di MainApp.
+      */}
+      <header className="border-b border-neutral-800 bg-neutral-900/95 backdrop-blur relative z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg">
+              <Camera size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                TOOLS GENERATOR PRODUK KANG AJAT POV REVIEW
+              </h1>
+              <p className="text-xs text-neutral-400">SEMUA PRODUK BISA DI BUAT DI SINI</p>
+            </div>
+          </div>
+          <div className="hidden md:flex items-center gap-4 text-sm text-neutral-500">
+            <span className="flex items-center gap-1"><Smartphone size={14}/> Mobile: Vertical</span>
+            <span className="flex items-center gap-1"><Monitor size={14}/> PC: Side-by-Side</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto p-4 md:p-8">
+        <div className="flex flex-col md:flex-row gap-8">
+          
+          {/* KOLOM KIRI: INPUT GLOBAL */}
+          <div className="w-full md:w-5/12 flex flex-col gap-6">
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <span className="bg-neutral-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
+                Upload Produk
+              </h2>
+              
+              {!productImage ? (
+                <div 
+                  onClick={() => fileInputRef.current.click()}
+                  className="border-2 border-dashed border-neutral-600 hover:border-indigo-500 hover:bg-neutral-800 transition-all rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer min-h-[200px] group"
+                >
+                  <div className="p-4 bg-neutral-800 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                    <Upload className="text-neutral-400 group-hover:text-indigo-400" size={32} />
+                  </div>
+                  <p className="text-sm font-medium text-neutral-300">Klik untuk upload foto</p>
+                  <p className="text-xs text-neutral-500 mt-1">PNG, JPG (Max 5MB)</p>
+                </div>
+              ) : (
+                <div className="relative rounded-xl overflow-hidden border border-neutral-700 group bg-neutral-900 flex items-center justify-center">
+                  <img src={productImage} alt="Product Preview" className="w-full h-auto max-h-[500px] object-contain" />
+                  <button 
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-black/70 hover:bg-red-500/90 text-white p-2 rounded-full backdrop-blur transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImageUpload} 
+                accept="image/*" 
+                className="hidden" 
+              />
+              
+              {/* --- BAGIAN BARU: UPLOAD FOTO PENDUKUNG --- */}
+              <div className="space-y-2 mt-4">
+                  <p className="text-[10px] font-bold text-neutral-500 uppercase">Foto Pendukung (Opsional)</p>
+                  {additionalPhotos.map(p => (
+                      <div key={p.id} className="flex gap-2 items-center bg-neutral-900 p-2 rounded border border-neutral-700">
+                          <img src={p.url} className="w-8 h-8 rounded object-cover"/>
+                          <input 
+                              placeholder="Keterangan (misal: Background)" 
+                              className="flex-1 bg-transparent text-xs outline-none text-gray-300 placeholder-neutral-600" 
+                              value={p.desc}
+                              onChange={e => { 
+                                  const newPhotos = additionalPhotos.map(ap => ap.id === p.id ? {...ap, desc: e.target.value} : ap); 
+                                  setAdditionalPhotos(newPhotos); 
+                              }}
+                          />
+                          <button onClick={() => handleRemoveAdditional(p.id)} className="text-neutral-500 hover:text-red-400"><Trash2 size={14}/></button>
+                      </div>
+                  ))}
+                  {additionalPhotos.length < 2 && (
+                      <label className="flex items-center justify-center gap-2 py-2 border border-neutral-700 rounded-xl text-xs text-neutral-500 hover:bg-neutral-800 cursor-pointer border-dashed transition-colors">
+                          <Plus size={12}/> Tambah Foto Lain
+                          <input type="file" className="hidden" onChange={handleAdditionalPhotoUpload}/>
+                      </label>
+                  )}
+              </div>
+              {/* --- END BAGIAN BARU --- */}
+
+            </div>
+
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-6 flex flex-col gap-5">
+              <div>
+                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span className="bg-neutral-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
+                  Konsep Utama
+                </h2>
+                <textarea
+                  value={mainConcept}
+                  onChange={(e) => setMainConcept(e.target.value)}
+                  placeholder="Contoh: Review baju baru, nuansa toko butik, pencahayaan cerah."
+                  className="w-full bg-neutral-900 border border-neutral-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-24 text-gray-200"
+                />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <span className="bg-neutral-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
+                  Gaya & Rasio
+                </h2>
+                <div className="flex flex-col gap-3">
+                    <div className="relative">
+                        <select
+                            value={handStyle}
+                            onChange={(e) => setHandStyle(e.target.value)}
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded-xl p-3 pl-10 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-200"
+                        >
+                            <option value="1_hand_point">1 Tangan (Pegang & Tunjuk)</option>
+                            <option value="2_hand">2 Tangan (Khusus Fashion/Produk Besar)</option>
+                            <option value="unboxing">Gaya Unboxing (Buka Paket)</option>
+                        </select>
+                        <Hand className="absolute left-3 top-3.5 text-neutral-500 pointer-events-none" size={16} />
+                    </div>
+                    <div className="relative">
+                        <select
+                            value={aspectRatio}
+                            onChange={(e) => setAspectRatio(e.target.value)}
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded-xl p-3 pl-10 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-200"
+                        >
+                            <option value="9:16">Portrait (9:16) - 1080x1920</option>
+                            <option value="16:9">Landscape (16:9) - 1920x1080</option>
+                            <option value="1:1">Square (1:1) - 1080x1080</option>
+                        </select>
+                        <Layout className="absolute left-3 top-3.5 text-neutral-500 pointer-events-none" size={16} />
+                    </div>
+                </div>
+              </div>
+
+              <button
+                onClick={generateInitialPhotos}
+                disabled={globalLoading || !productImage || !mainConcept}
+                className={`w-full py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 font-semibold transition-all shadow-lg
+                  ${globalLoading 
+                    ? '!bg-neutral-800 !text-neutral-500 !border !border-neutral-700 cursor-progress opacity-80' 
+                    : !productImage || !mainConcept
+                      ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98]'
+                  }`}
+              >
+                {globalLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-neutral-600 border-t-neutral-400"></div>
+                    <span>sabar ya buat gambar itu susah</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    Generate 4 Variasi
+                  </>
+                )}
+              </button>
+              
+              {error && (
+                <div className="p-3 bg-red-900/30 border border-red-800 text-red-200 rounded-lg text-sm mt-2">{error}</div>
+              )}
+            </div>
+          </div>
+
+          {/* KOLOM KANAN: HASIL DENGAN KONTROL PER ITEM */}
+          <div className="w-full md:w-7/12 flex flex-col">
+             <div className="bg-neutral-800/30 border border-neutral-700 rounded-2xl p-6 h-full min-h-[600px] flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <ImageIcon className="text-indigo-400" />
+                    Hasil Studio (4 Variasi)
+                  </h2>
+                </div>
+
+                <div className="flex-1 bg-neutral-900/50 rounded-xl border-2 border-dashed border-neutral-800 p-4 relative overflow-y-auto">
+                  
+                  {results.length > 0 ? (
+                    <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-indigo-600 scrollbar-track-neutral-800">
+                        {results.map((item, idx) => (
+                            <div key={idx} className="flex-none w-72 md:w-80 flex flex-col gap-2 bg-neutral-800 p-3 rounded-xl border border-neutral-700/50 shadow-lg snap-center relative group">
+                                
+                                {/* 1. BAGIAN GAMBAR / VISUAL */}
+                                <div className={`relative w-full ${getAspectRatioClasses()} rounded-lg overflow-hidden bg-black/50`}>
+                                    {item.loading ? (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 text-neutral-400">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent mb-2"></div>
+                                            <span className="text-xs">sabar!! buat foto itu susah</span>
+                                        </div>
+                                    ) : item.error ? (
+                                        <div className="absolute inset-0 flex items-center justify-center text-red-400 text-xs text-center p-2 bg-neutral-900">
+                                            {item.error}
+                                        </div>
+                                    ) : (
+                                        <>
+                                          <img 
+                                              src={item.img} 
+                                              alt={`Variasi ${idx+1}`} 
+                                              className={`w-full h-full object-cover transition-opacity ${item.isEditing ? 'opacity-80' : 'opacity-100'}`}
+                                          />
+                                          {!item.isEditing && (
+                                            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] text-white/80 font-mono">
+                                                VAR {idx+1}
+                                            </div>
+                                          )}
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* 2. KONTROL INLINE (EDIT / ACTIONS) */}
+                                {item.isEditing ? (
+                                  // UI EDIT MODE
+                                  <div className="flex flex-col gap-2 mt-1 bg-neutral-900/50 p-2 rounded-lg border border-neutral-700">
+                                     <h4 className="text-white text-xs font-bold flex items-center gap-2">
+                                       <Edit2 size={12}/> Edit Konsep Foto Ini
+                                     </h4>
+                                     <textarea 
+                                       value={item.prompt}
+                                       onChange={(e) => handlePromptChange(idx, e.target.value)}
+                                       className="w-full bg-neutral-800 border border-neutral-600 rounded-lg p-2 text-xs text-white resize-none focus:border-indigo-500 outline-none h-16"
+                                       placeholder="Tulis detail revisi di sini (misal: 'tangan jangan menutupi logo')..."
+                                     />
+                                     <div className="flex gap-2">
+                                        <button 
+                                          onClick={() => toggleEditMode(idx)}
+                                          className="flex-1 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-white text-xs rounded-md"
+                                        >
+                                          Batal
+                                        </button>
+                                        <button 
+                                          onClick={() => handleSubmitEdit(idx)}
+                                          className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md font-bold flex justify-center items-center gap-1"
+                                        >
+                                          <Check size={12} /> Buat Ulang
+                                        </button>
+                                     </div>
+                                  </div>
+                                ) : (
+                                  // UI NORMAL MODE
+                                  <div className="grid grid-cols-4 gap-2 mt-1">
+                                      <button
+                                          onClick={() => handleRegenerateSingle(idx, false)} // False = Refresh (New Seed)
+                                          disabled={item.loading}
+                                          className="col-span-1 flex flex-col items-center justify-center py-2 bg-neutral-700 hover:bg-indigo-600 text-neutral-300 hover:text-white rounded-lg transition-colors group/btn"
+                                          title="Regenerate (Ulangi Foto Ini)"
+                                      >
+                                          <RefreshCw size={16} className={item.loading ? "animate-spin" : ""} />
+                                      </button>
+
+                                      <button
+                                          onClick={() => toggleEditMode(idx)}
+                                          disabled={item.loading}
+                                          className="col-span-1 flex flex-col items-center justify-center py-2 bg-neutral-700 hover:bg-indigo-600 text-neutral-300 hover:text-white rounded-lg transition-colors"
+                                          title="Edit Konsep Foto Ini"
+                                      >
+                                          <Edit2 size={16} />
+                                      </button>
+
+                                      <button
+                                          onClick={() => handleDownload(item.img, idx)}
+                                          disabled={!item.img || item.loading}
+                                          className="col-span-2 flex items-center justify-center gap-2 bg-neutral-700 hover:bg-green-600 text-neutral-300 hover:text-white rounded-lg text-xs font-medium transition-colors"
+                                      >
+                                          <Download size={14} />
+                                          Download
+                                      </button>
+                                  </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-neutral-500">
+                      <div className="bg-neutral-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Sparkles size={24} className="opacity-50" />
+                      </div>
+                      <p className="font-medium">Galeri Kosong</p>
+                      <p className="text-xs mt-2 opacity-60 max-w-sm mx-auto">
+                        Klik 'Generate' untuk membuat 4 variasi foto.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 text-xs text-neutral-500 text-center">
+                   *Gunakan tombol <RefreshCw size={10} className="inline"/> untuk ulang 1 foto, atau <Edit2 size={10} className="inline"/> untuk edit konsep foto tersebut.
+                </div>
+             </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  );
+};
+
+
+/* ================================================================================
+   BAGIAN 3: LIVE HOST GENERATOR (TAB 3 - BARU)
+   Kode ini ditambahkan sesuai permintaan tanpa merusak tab 1 dan 2.
+================================================================================
+*/
+
+const LiveHostGenerator = () => {
+  // --- STATE MANAGEMENT ---
+  
+  // Column 1: Settings
+  const [location, setLocation] = useState('Studio Profesional');
+  
+  // Column 2: Images
+  const [productImage, setProductImage] = useState(null);
+  const [supportImage, setSupportImage] = useState(null);
+  
+  // Column 3: Description & Concept (MERGED)
+  const [fullDescription, setFullDescription] = useState('');
+  
+  // Column 4: Model Details
+  const [modelImage, setModelImage] = useState(null); 
+  const [modelPose, setModelPose] = useState(''); 
+  const [clothing, setClothing] = useState('');
+  const [gender, setGender] = useState('Wanita');
+  const [ageGroup, setAgeGroup] = useState('Dewasa Muda');
+  
+  // Column 5: Ratio
+  const [aspectRatio, setAspectRatio] = useState('9:16');
+  
+  // Generation State
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Edit Mode State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editInstruction, setEditInstruction] = useState('');
+  const [editingIndex, setEditingIndex] = useState(null);
+
+  // --- VIDEO PROMPT STATE (NEW) ---
+  const [vpTargetIndex, setVpTargetIndex] = useState(null);
+  const [vpCategory, setVpCategory] = useState('ugc'); // ugc, commercial, broll
+  const [vpCamera, setVpCamera] = useState('Slow Zoom In (Mendekat Pelan)');
+  const [vpAction, setVpAction] = useState('Memegang produk dan tersenyum');
+  const [vpTalking, setVpTalking] = useState('expressive');
+  const [vpLoading, setVpLoading] = useState(false);
+  const [vpResult, setVpResult] = useState(null); // { text_id, text_en, structured_json }
+  const [copyStatus, setCopyStatus] = useState("Salin Teks");
+  const [copyStatusJson, setCopyStatusJson] = useState("Salin JSON");
+
+  // --- HELPER FUNCTIONS ---
+
+  const handleImageUpload = (e, setter) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearImage = (setter) => {
+    setter(null);
+    if (setter === setModelImage) setModelPose(''); 
+  };
+
+  // Local secureCopy to respect "jangan ada yang di sederhanakan" instruction regarding provided code logic
+  const secureCopyLive = (text, callback) => {
+    if (!text) return;
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful && callback) callback();
+    } catch (err) {
+      console.error('Gagal menyalin', err);
+    }
+  };
+
+  const handleDownloadHighRes = (index) => {
+    const currentImage = generatedImages[index]?.img;
+    if (!currentImage) return;
+
+    // Create a temporary image to load the base64
+    const img = new Image();
+    img.src = currentImage;
+    img.onload = () => {
+        // Create a canvas with specific dimensions based on aspect ratio
+        const canvas = document.createElement('canvas');
+        
+        if (aspectRatio === '9:16') {
+            canvas.width = 1080;
+            canvas.height = 1920;
+        } else if (aspectRatio === '16:9') {
+            canvas.width = 1920;
+            canvas.height = 1080;
+        } else {
+            canvas.width = 1080;
+            canvas.height = 1080;
+        }
+
+        const ctx = canvas.getContext('2d');
+        
+        // Perhitungan skala agar gambar tidak gepeng (object-fit: cover)
+        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+        const x = (canvas.width - img.width * scale) / 2;
+        const y = (canvas.height - img.height * scale) / 2;
+
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Draw image dengan skala proporsional
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        
+        // Export as PNG
+        const link = document.createElement('a');
+        link.download = `live-host-hd-${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png', 1.0); // Highest quality
+        link.click();
+    };
+  };
+
+  // --- VIDEO PROMPT LOGIC (FROM USER) ---
+  const handleVideoMotion = async () => {
+    if (vpTargetIndex === null || !generatedImages[vpTargetIndex]?.img) return;
+    setVpLoading(true);
+    setCopyStatus("Salin Teks");
+    setCopyStatusJson("Salin JSON");
+    setVpResult(null);
+    setError(null); // Clear previous errors
+
+    try {
+        const currentBase64 = generatedImages[vpTargetIndex].img;
+        const categoryStyle = vpCategory === 'ugc' ? "Cinematic Vlog/UGC" : vpCategory === 'commercial' ? "High End Commercial" : "Cinematic B-Roll";
+        const isProductMode = vpCategory === 'broll';
+
+        const prompt = `Bertindaklah sebagai Director Video AI. Analisis gambar ini (kategori: ${vpCategory}).
+        1. DETEKSI SUBJEK: ${isProductMode ? "Fokus pada PRODUK/OBJEK. Abaikan deteksi manusia kecuali sangat jelas terlihat. JANGAN paksakan ada model jika gambar hanya produk." : "Cek Gender (Pria/Wanita), Jumlah Orang, Pakaian, dan Wajah. Sesuaikan deskripsi subject dengan fakta visual ini."}
+        2. Gerakan Kamera: "${vpCamera}"
+        3. Gerakan Subjek: "${isProductMode ? "Fokus pada produk. Abaikan gerakan manusia jika tidak ada orang. Jika produk benda mati, buat gerakan statis atau fisika natural (uap, kilau, tuang). Gerakan Kamera adalah prioritas utama." : vpAction}"
+        4. Gaya Bicara: "${isProductMode ? "Silent (Product Shot)" : LIVE_TALKING_STYLES.find(t=>t.id===vpTalking)?.name || 'Silent'}"
+        
+        Tugas: Buat prompt video AI (Google Veo/Flow/Runway/Kling) yang PADAT, JELAS, dan LANGSUNG KE VISUAL.
+        
+        ATURAN DIALOG:
+        - Jika Gaya Bicara bukan 'silent' dan ada model manusia, buatkan dialog pendek Bahasa Indonesia yang menarik dan relevan dengan produk "${fullDescription}".
+        - Letakkan dialog di dalam kurung (...) pada bagian 'action'. Contoh: "Mouth moves naturally speaking: (Halo guys, cek produk ini ya!)".
+        
+        ATURAN PENULISAN (STRICT):
+        1. JANGAN bertele-tele. JANGAN mulai dengan kata teknis kamera seperti "Bidikan...", "Video ini...", "Kamera...".
+        2. WAJIB DIMULAI LANGSUNG dengan deskripsi fisik subjek yang SPESIFIK dan AKURAT. 
+           ${isProductMode ? "Contoh: 'A close-up of a hot coffee cup with steam rising...' atau 'A sleek smartphone on a wooden table...' (TANPA MODEL)" : "Contoh: 'Model wanita Asia, rambut panjang bergelombang...'"}
+        3. CONTEXT AWARENESS: AI harus menyesuaikan gerakan berdasarkan ada/tidaknya manusia.
+
+        Wajib berikan output HANYA dalam format JSON valid (tanpa markdown) dengan struktur berikut:
+        {
+           "text_id": "Prompt Bahasa Indonesia (Mulai langsung dengan deskripsi visual subjek)...",
+           "text_en": "Prompt English (Start directly with visual subject description). TRANSLATE EVERYTHING TO ENGLISH EXCEPT THE DIALOGUE INSIDE PARENTHESES (...) WHICH MUST REMAIN IN INDONESIAN.",
+           "structured_json": {
+               "shot_description": {
+                   "subject": "${isProductMode ? "The product in the photo (Describe specific product details: color, texture, shape). Maintain 100% fidelity to the original product image. No human model description needed unless visible." : "(Ganti ini dengan deskripsi subjek spesifik: 'An Indonesian woman...', 'A man...', 'Two people: man and woman...') with the exact same face, facial structure, eyes, hair, clothing, outfit pattern, outfit color, and fabric texture, all identical to the original photo with absolutely no changes."}",
+                   "action": "${isProductMode ? `Camera movement is ${vpCamera}. Product remains the focal point. (AI Generate natural product action if applicable, e.g., steam rising, rotating, or static).` : `The model moves naturally: ${vpAction}. [IF TALKING: Their mouth moves naturally while speaking in Indonesian with a ${vpTalking} tone: (Insert Generated Dialog Here)]. The head follows the body subtly and naturally.`}",
+                   "setting": "The background and lighting remain exactly the same as the original photo, with no color changes, no altered shadows, and no missing or added elements."
+               },
+               "cinematography": {
+                   "camera_angle": "${vpCamera}",
+                   "shot_type": "Mid to full body shot (matching the original photo perspective)",
+                   "lighting": "Stable natural lighting with no changes in brightness or color temperature",
+                   "style": "${categoryStyle}, natural movement, high quality, smooth and natural motion"
+               },
+               "negative": "morphing, distortion, bad hands, extra fingers, text overlay, ui elements, watermark, low quality, blurry"
+           }
+        }`;
+
+        // UPDATED: Use the correct model for Image Understanding (gemini-2.5-flash-preview-09-2025)
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: currentBase64.split(',')[1] } }] }],
+                    generationConfig: { responseMimeType: "application/json" }
+                })
+            }
+        );
+
+        if (!response.ok) throw new Error("Gagal menghubungi AI (Cek konsol untuk detail)");
+        
+        const result = await response.json();
+        let jsonStr = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (jsonStr) {
+            // Cleanup potential markdown formatting that might break JSON.parse
+            jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsedData = JSON.parse(jsonStr);
+            setVpResult(parsedData);
+        } else {
+            throw new Error("Respon kosong");
+        }
+
+    } catch (e) {
+        console.error(e);
+        setError("Gagal membuat prompt video. Silakan coba lagi.");
+    } finally {
+        setVpLoading(false);
+    }
+  };
+
+  const handleCopyText = () => {
+      if (vpResult) {
+          secureCopyLive(vpResult.text_en, () => {
+              setCopyStatus("Tersalin! ✅");
+              setTimeout(() => setCopyStatus("Salin Teks"), 2000);
+          });
+      }
+  };
+
+  const handleCopyJson = () => {
+      if (vpResult && vpResult.structured_json) {
+          const jsonString = JSON.stringify(vpResult.structured_json, null, 2);
+          secureCopyLive(jsonString, () => {
+              setCopyStatusJson("JSON Tersalin! ✅");
+              setTimeout(() => setCopyStatusJson("Salin JSON"), 2000);
+          });
+      }
+  };
+
+  // --- IMAGE GENERATION LOGIC ---
+
+  const generateLiveHost = async (isEditMode = false, targetIdx = null) => {
+    if (!productImage && !isEditMode) {
+      setError("Mohon unggah foto produk utama terlebih dahulu.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    setVpTargetIndex(null);
+    setVpResult(null);
+
+    if (isEditMode) setIsEditing(true);
+
+    let slots = [];
+    if (targetIdx !== null) {
+        slots = [targetIdx];
+        setGeneratedImages(prev => {
+            const newArr = [...prev];
+            newArr[targetIdx] = { ...newArr[targetIdx], loading: true, error: null };
+            return newArr;
+        });
+    } else {
+        slots = [0, 1, 2, 3];
+        setGeneratedImages(Array(4).fill(0).map((_, i) => ({ img: null, loading: true, error: null })));
+    }
+    
+    try {
+      const currentPose = modelPose;
+      let hostDescription = "";
+      
+      if (modelImage) {
+        hostDescription = `
+        HOST/MODEL (User Uploaded Reference) - CRITICAL:
+        - WAJIB MENGGUNAKAN WAJAH YANG IDENTIK dengan "Foto Model" yang dilampirkan.
+        - Pertahankan fitur wajah, struktur tulang, dan ekspresi mikro agar terlihat seperti orang yang sama (Identity Preservation).
+        - Integrasikan wajah ke tubuh dan pencahayaan studio secara NATURAL. JANGAN terlihat seperti tempelan/stiker/photoshop kasar.
+        - Skin texture dan skin tone harus menyatu sempurna dengan pencahayaan ruangan.
+        - POSE KHUSUS: ${currentPose || "Pose natural memegang atau menunjuk produk"}.
+        - Pakaian/Aksesoris: ${clothing || "Sesuaikan dengan foto model atau gunakan pakaian kasual yang cocok"}.
+        `;
+      } else {
+        hostDescription = `
+        HOST/MODEL (AI Generated):
+        - Gender: ${gender}
+        - Usia: ${ageGroup}
+        - Pakaian/Aksesoris: ${clothing || "Pakaian kasual rapi yang sesuai dengan produk"}.
+        - Pose: ${currentPose || "Interaktif dengan produk"}.
+        `;
+      }
+
+      let locationDetail = location;
+      switch(location) {
+        case 'Studio Profesional':
+          locationDetail = "Studio Live Streaming/Podcast Profesional. Model duduk di kursi gaming/podcast premium. Terdapat meja display tempat menaruh produk di depan model. Latar belakang berupa rak estetik dengan pencahayaan ambient (neon/LED) yang elegan. Lighting wajah terang dan merata bergaya high-key studio.";
+          break;
+        case 'Kamar Tidur Aestetik':
+          locationDetail = "Kamar tidur yang cozy dan estetik (Pinterest style). Latar belakang kasur rapi, lampu tidur warm, atau meja rias minimalis. Suasana santai dan intim.";
+          break;
+        case 'Gudang Stok':
+          locationDetail = "Gudang penyimpanan/distributor (Warehouse). Latar belakang rak besi besar yang berisi tumpukan kardus stok barang yang rapi. Suasana sibuk tapi tertata, pencahayaan industrial.";
+          break;
+        case 'Outdoor Taman':
+          locationDetail = "Di luar ruangan (Outdoor), taman yang indah dengan pepohonan hijau. Cahaya matahari natural (golden hour/daylight), suasana segar dan cerah.";
+          break;
+        case 'Ruang Tamu Minimalis':
+          locationDetail = "Ruang tamu modern minimalis. Ada sofa yang nyaman, meja tamu, tanaman hias indoor, dan cahaya natural dari jendela besar. Suasana homey.";
+          break;
+        case 'Dapur Modern':
+          locationDetail = "Dapur modern (Modern Kitchen) yang bersih. Ada meja island berbahan marmer atau kayu, perlengkapan dapur estetik di latar belakang. Pencahayaan terang dan bersih.";
+          break;
+        default:
+          locationDetail = location;
+      }
+
+      await Promise.all(slots.map(async (idx) => {
+        try {
+            await new Promise(resolve => setTimeout(resolve, idx * 500)); // stagger slightly
+            let parts = [];
+            let promptText = "";
+
+            if (isEditMode && generatedImages[idx]?.img) {
+                // Edit Mode specific to the selected image
+                promptText = `
+                  Edit gambar ini sesuai instruksi berikut: "${editInstruction}".
+                  PENTING: PERTAHANKAN wajah model, produk, dan latar belakang semirip mungkin.
+                  HANYA ubah bagian yang diminta. Output harus fotorealistik 8k.
+                `;
+                parts.push({ text: promptText });
+                parts.push({ inlineData: { mimeType: "image/jpeg", data: generatedImages[idx].img.split(',')[1] } });
+
+            } else {
+                // New Generation
+                promptText = `
+                  Buat gambar foto profesional yang sangat realistis (8k resolution) dari seorang host/model yang sedang mempromosikan produk.
+                  JANGAN buat tampilan antarmuka aplikasi. HANYA FOTO MURNI.
+                  NEGATIVE PROMPT (Hindari): Wajah seperti topeng, leher tidak nyambung, pencahayaan wajah berbeda dengan background, terlihat editan kasar, kartun, ilustrasi, sticker look.
+                  
+                  PENTING - INTEGRASI KONSEP INTERIOR & FUNGSI LOKASI:
+                  Anda HARUS menggabungkan "DESKRIPSI PRODUK & RUANGAN DARI USER" dengan "SETTING LOKASI" secara cerdas dan harmonis.
+                  Aturan Emas: Jika user mendeskripsikan gaya interior/ruangan tertentu secara detail, jadikan itu sebagai GAYA ARSITEKTUR UTAMA. Kemudian, adaptasikan elemen fungsional dari Setting Lokasi ke dalam gaya tersebut.
+                  Contoh: Jika user menulis "Ruang tamu Japandi" dan Setting Lokasi adalah "Studio Profesional", maka bangunlah SETUP STUDIO (ada meja presentasi, kursi host, dll) DI DALAM ruang tamu Japandi tersebut, dan pastikan meja/kursinya berdesain kayu/Japandi agar cocok.
+                  
+                  DESKRIPSI PRODUK & RUANGAN DARI USER (GAYA/TEMA UTAMA):
+                  "${fullDescription || "Model berinteraksi dengan produk secara natural"}"
+                  
+                  SETTING LOKASI (FUNGSI RUANGAN & POSISI MODEL):
+                  - ${locationDetail}
+                  
+                  ${hostDescription}
+                  
+                  FORMAT GAMBAR:
+                  - Rasio aspek ${aspectRatio}.
+                  - Fotorealistik, detail tajam, cinematic lighting.
+                  
+                  **VARIATION SEED:** ${Math.floor(Math.random() * 999999999)}
+                `;
+
+                parts.push({ text: promptText });
+                if (productImage) parts.push({ inlineData: { mimeType: "image/jpeg", data: productImage.split(',')[1] } });
+                if (modelImage) parts.push({ inlineData: { mimeType: "image/jpeg", data: modelImage.split(',')[1] } });
+            }
+
+            // Using gemini-2.5-flash-image-preview for Image Generation
+            const response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ parts: parts }],
+                  generationConfig: { responseModalities: ["IMAGE"] }
+                })
+              }
+            );
+
+            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+
+            const result = await response.json();
+            const outputBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+            if (outputBase64) {
+              setGeneratedImages(prev => {
+                  const newArr = [...prev];
+                  newArr[idx] = { img: `data:image/jpeg;base64,${outputBase64}`, loading: false, error: null };
+                  return newArr;
+              });
+            } else {
+              throw new Error("Gagal menghasilkan gambar.");
+            }
+        } catch (err) {
+            console.error(err);
+            setGeneratedImages(prev => {
+                const newArr = [...prev];
+                newArr[idx] = { img: null, loading: false, error: err.message || "Gagal" };
+                return newArr;
+            });
+        }
+      }));
+
+      if (isEditMode) {
+          setEditInstruction('');
+          setEditingIndex(null);
+      }
+
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Terjadi kesalahan sistem saat generate foto.");
+    } finally {
+      setIsGenerating(false);
+      setIsEditing(false);
+    }
+  };
+
+  // --- RENDER COMPONENTS ---
+
+  const SectionHeader = ({ icon: Icon, title, number }) => (
+    <div className="flex items-center gap-2 mb-4 border-b border-gray-700 pb-2">
+      <div className="bg-purple-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+        {number}
+      </div>
+      <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+        <Icon size={18} /> {title}
+      </h3>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-gray-200 font-sans p-4 md:p-8">
+      
+      {/* Header */}
+      <div className="max-w-7xl mx-auto mb-8 text-center">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent mb-2">
+          LIVE HOST PAK RT
+        </h1>
+        <p className="text-gray-400">Buat foto promosi & prompt video AI secara instan</p>
+      </div>
+
+      <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-8 items-start">
+        
+        {/* LEFT SIDE: INPUTS */}
+        <div className="w-full lg:w-7/12 flex flex-col gap-6 transition-all duration-500 ease-in-out">
+
+          {/* KOLOM 1 */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg h-fit">
+            <SectionHeader icon={MapPin} title="Lokasi Live" number="1" />
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-400">Pilih Latar Belakang Default</label>
+              <select value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 outline-none">
+                <option value="Studio Profesional">Studio Profesional</option>
+                <option value="Kamar Tidur Aestetik">Kamar Tidur Aestetik</option>
+                <option value="Gudang Stok">Gudang Stok (Warehouse)</option>
+                <option value="Outdoor Taman">Outdoor Taman</option>
+                <option value="Ruang Tamu Minimalis">Ruang Tamu Minimalis</option>
+                <option value="Dapur Modern">Dapur Modern</option>
+              </select>
+            </div>
+          </div>
+
+          {/* KOLOM 2 */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg h-fit">
+            <SectionHeader icon={Camera} title="Foto Produk" number="2" />
+            <div className="space-y-4">
+              <div className="relative group">
+                <label className="block text-sm font-medium text-gray-400 mb-1">Foto Produk Utama (Wajib)</label>
+                {!productImage ? (
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-700 transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <p className="text-xs text-gray-500">Klik untuk upload</p>
+                    </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setProductImage)} />
+                  </label>
+                ) : (
+                  <div className="relative w-full h-auto min-h-[150px] max-h-[400px] bg-gray-900 rounded-lg overflow-hidden border border-purple-500">
+                    <img src={productImage} alt="Product" className="w-full h-full object-contain" />
+                    <button onClick={() => clearImage(setProductImage)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"> <X size={14} /> </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* KOLOM 3 */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg h-fit">
+            <SectionHeader icon={Sparkles} title="Deskripsi" number="3" />
+            <div className="h-full flex flex-col">
+              <label className="block text-sm font-medium text-gray-400 mb-1">Keterangan Produk</label>
+              <textarea 
+                rows="8" 
+                placeholder="Jelaskan produk Anda..."
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-sm outline-none resize-none flex-grow"
+                value={fullDescription}
+                onChange={(e) => setFullDescription(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* KOLOM 4 */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg h-fit">
+            <SectionHeader icon={User} title="Model" number="4" />
+            <div className="space-y-4">
+              <div className="p-3 bg-gray-700/30 rounded-lg mb-2">
+                  <span className="text-xs text-purple-300 font-semibold block mb-2">Metode Model</span>
+                  <div className="w-full">
+                      <label className="block text-xs font-medium text-gray-400 mb-1">Upload Foto Model (Wajah/Orang)</label>
+                      {!modelImage ? (
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-700 transition bg-gray-700/50">
+                          <User className="w-6 h-6 text-gray-400 mb-1" />
+                          <span className="text-[10px] text-gray-400 text-center px-2">Klik untuk upload foto sendiri</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setModelImage)} />
+                      </label>
+                      ) : (
+                      <div className="relative w-full h-48 bg-gray-900 rounded-lg overflow-hidden border border-purple-500 shadow-md">
+                          <img src={modelImage} alt="Model" className="w-full h-full object-cover" />
+                          <button onClick={() => clearImage(setModelImage)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1.5 hover:bg-red-700 shadow-lg z-10"> <X size={12} /> </button>
+                      </div>
+                      )}
+                  </div>
+              </div>
+
+              {!modelImage && (
+                  <div className="grid grid-cols-2 gap-3">
+                      <div>
+                          <label className="block text-xs font-medium text-gray-400 mb-1">Gender</label>
+                          <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-sm">
+                              <option value="Pria">Pria</option>
+                              <option value="Wanita">Wanita</option>
+                          </select>
+                      </div>
+                      <div>
+                          <label className="block text-xs font-medium text-gray-400 mb-1">Usia</label>
+                          <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-sm">
+                              <option value="Anak-anak">Anak-anak</option>
+                              <option value="Remaja">Remaja</option>
+                              <option value="Dewasa Muda">Dewasa Muda</option>
+                              <option value="Dewasa">Dewasa</option>
+                          </select>
+                      </div>
+                  </div>
+              )}
+
+              <div className="pt-2 border-t border-gray-700 mt-2">
+                <label className="block text-sm font-medium text-gray-400 mb-1 flex items-center gap-2"><Shirt size={14} /> Pakaian & Aksesoris</label>
+                <input type="text" placeholder="Contoh: Hoodie merah..." className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-sm outline-none" value={clothing} onChange={(e) => setClothing(e.target.value)} />
+              </div>
+              
+              {modelImage && (
+                  <div className="mt-2 border-t border-gray-700 pt-2">
+                        <label className="block text-xs font-medium text-purple-300 mb-1 flex items-center gap-1"><ScanFace size={12} /> Pose Gaya Model</label>
+                        <input type="text" placeholder="Contoh: Menunjuk ke atas..." className="w-full bg-gray-700 border border-purple-500/50 rounded-lg p-2.5 text-sm outline-none" value={modelPose} onChange={(e) => setModelPose(e.target.value)} />
+                  </div>
+              )}
+            </div>
+          </div>
+
+          {/* KOLOM 5 */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg h-fit">
+            <SectionHeader icon={MonitorPlay} title="Ukuran" number="5" />
+            <div className="space-y-4">
+               <div className="grid grid-cols-3 gap-2">
+                  {['9:16', '16:9', '1:1'].map((ratio) => (
+                    <button key={ratio} onClick={() => setAspectRatio(ratio)} className={`p-3 rounded-lg border text-sm font-semibold transition ${aspectRatio === ratio ? 'bg-purple-600 border-purple-500 text-white shadow-lg' : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'}`}>
+                      {ratio} <div className="mt-1 opacity-50 text-[10px]">{ratio === '9:16' ? 'TikTok' : ratio === '16:9' ? 'YouTube' : 'Instagram'}</div>
+                    </button>
+                  ))}
+               </div>
+            </div>
+          </div>
+
+          {/* KOLOM 6 */}
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex flex-col justify-center h-fit">
+              <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2"><Sparkles className="text-yellow-400" /> Eksekusi</h3>
+              <button onClick={() => generateLiveHost(false)} disabled={isGenerating || !productImage} className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition transform active:scale-95 ${isGenerating ? 'bg-gray-600 cursor-not-allowed text-gray-400' : !productImage ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-900/30'}`}>
+                {isGenerating && editingIndex === null ? (<span className="flex items-center justify-center gap-2"><span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span> Proses...</span>) : "GENERATE 4 FOTO"}
+              </button>
+              {!productImage && <p className="text-red-400 text-xs text-center mt-2">*Upload produk wajib</p>}
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: HASIL GENERATE & TOOLS */}
+        <div className="w-full lg:w-5/12 flex flex-col gap-4 animate-fade-in flex-shrink-0 lg:sticky lg:top-8">
+              
+             {error && <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg flex items-center gap-2"><AlertCircle /> {error}</div>}
+
+             <div className="bg-gray-800 p-6 rounded-xl border border-purple-500/50 shadow-2xl flex flex-col items-center relative overflow-hidden min-h-[400px]">
+                
+                {/* Header */}
+                <div className="w-full flex justify-between items-center mb-4 border-b border-gray-700 pb-4">
+                  <h2 className="text-xl font-bold text-white">Hasil AI (4 Variasi)</h2>
+                  {generatedImages.length > 0 && (
+                    <button onClick={() => generateLiveHost(false)} disabled={isGenerating} title="Generate Ulang Semua" className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full text-white transition disabled:opacity-50">
+                      <RefreshCw size={18} className={isGenerating && editingIndex === null ? "animate-spin" : ""} />
+                    </button>
+                  )}
+                </div>
+
+                {generatedImages.length > 0 || isGenerating ? (
+                    <div className="w-full">
+                        <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-gray-800">
+                            {generatedImages.map((item, idx) => (
+                                <div key={idx} className="flex-none w-72 md:w-80 flex flex-col gap-2 bg-gray-900 p-3 rounded-xl border border-gray-700 shadow-lg snap-center relative group">
+                                    
+                                    {/* Image Container */}
+                                    <div className={`relative w-full ${aspectRatio === '9:16' ? 'aspect-[9/16]' : aspectRatio === '16:9' ? 'aspect-video' : 'aspect-square'} rounded-lg overflow-hidden bg-black/50`}>
+                                        {item.loading ? (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-gray-400">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent mb-2"></div>
+                                                <span className="text-xs">sabar!!</span>
+                                            </div>
+                                        ) : item.error ? (
+                                            <div className="absolute inset-0 flex items-center justify-center text-red-400 text-xs text-center p-2 bg-gray-900">
+                                                {item.error}
+                                            </div>
+                                        ) : item.img ? (
+                                            <>
+                                                <img src={item.img} alt={`Variasi ${idx+1}`} className={`w-full h-full object-cover transition-opacity ${editingIndex === idx ? 'opacity-80' : 'opacity-100'}`} />
+                                                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] text-white/80 font-mono">
+                                                    VAR {idx+1}
+                                                </div>
+                                            </>
+                                        ) : null}
+                                    </div>
+
+                                    {/* Actions Inline below image */}
+                                    {item.img && !item.loading && (
+                                        <div className="grid grid-cols-4 gap-2 mt-1">
+                                            <button 
+                                                onClick={() => generateLiveHost(false, idx)}
+                                                className="col-span-1 flex flex-col items-center justify-center py-2 bg-gray-800 hover:bg-purple-600 text-gray-300 hover:text-white rounded-lg transition-colors group/btn"
+                                                title="Generate Ulang"
+                                            >
+                                                <RefreshCw size={14} className={item.loading ? "animate-spin" : ""} />
+                                            </button>
+                                            <button 
+                                                onClick={() => setEditingIndex(editingIndex === idx ? null : idx)}
+                                                className={`col-span-1 flex flex-col items-center justify-center py-2 rounded-lg transition-colors ${editingIndex === idx ? 'bg-purple-600 text-white' : 'bg-gray-800 hover:bg-purple-600 text-gray-300 hover:text-white'}`}
+                                                title="Edit Variasi"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                            <button 
+                                                onClick={() => setVpTargetIndex(vpTargetIndex === idx ? null : idx)}
+                                                className={`col-span-1 flex flex-col items-center justify-center py-2 rounded-lg transition-colors ${vpTargetIndex === idx ? 'bg-pink-600 text-white' : 'bg-gray-800 hover:bg-pink-600 text-gray-300 hover:text-white'}`}
+                                                title="Buat Prompt Video"
+                                            >
+                                                <Film size={14} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDownloadHighRes(idx)}
+                                                className="col-span-1 flex flex-col items-center justify-center py-2 bg-gray-800 hover:bg-green-600 text-gray-300 hover:text-white rounded-lg transition-colors"
+                                                title="Download"
+                                            >
+                                                <Download size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Edit Textbox inline */}
+                                    {editingIndex === idx && item.img && (
+                                        <div className="flex flex-col gap-2 mt-2 bg-gray-800/50 p-2 rounded-lg border border-purple-500/50 animate-in slide-in-from-top-2">
+                                            <label className="text-[10px] text-purple-300 font-bold flex items-center gap-1"><Wand2 size={10} /> Instruksi Edit</label>
+                                            <textarea 
+                                                value={editInstruction} 
+                                                onChange={(e) => setEditInstruction(e.target.value)} 
+                                                placeholder="Contoh: Ubah gaya pose/tangan..." 
+                                                className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-purple-500 resize-none h-12"
+                                            />
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setEditingIndex(null)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-[10px] py-1.5 rounded">Batal</button>
+                                                <button onClick={() => generateLiveHost(true, idx)} disabled={!editInstruction.trim()} className="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-[10px] py-1.5 rounded font-bold flex justify-center items-center gap-1"><Send size={10}/> Proses</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Video Prompt Tool Below Gallery */}
+                        {vpTargetIndex !== null && generatedImages[vpTargetIndex]?.img && (
+                            <div className="w-full mt-4 bg-gray-900/50 p-4 rounded-lg border border-pink-500/30 animate-fade-in">
+                                <div className="flex justify-between items-center mb-3 border-b border-gray-700 pb-2">
+                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                        <Film size={14} className="text-pink-500" /> Konfigurasi Video AI (Variasi {vpTargetIndex + 1})
+                                    </h3>
+                                    <button onClick={() => setVpTargetIndex(null)} className="text-gray-400 hover:text-white"><X size={14}/></button>
+                                </div>
+
+                                {/* Settings Form */}
+                                {!vpResult && !vpLoading && (
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="text-[10px] text-gray-400 block mb-1">Kategori Video</label>
+                                      <select value={vpCategory} onChange={(e) => setVpCategory(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-xs outline-none">
+                                        <option value="ugc">Cinematic Vlog / UGC (Human Focus)</option>
+                                        <option value="commercial">High End Commercial</option>
+                                        <option value="broll">Cinematic B-Roll (Product Focus)</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] text-gray-400 block mb-1">Gerakan Kamera</label>
+                                      <select value={vpCamera} onChange={(e) => setVpCamera(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-xs outline-none">
+                                        {CAM_MOVES.map((m, i) => <option key={i} value={m}>{m}</option>)}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] text-gray-400 block mb-1">Aksi Model / Subjek</label>
+                                      <input type="text" value={vpAction} onChange={(e) => setVpAction(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-xs outline-none" placeholder="Contoh: Tersenyum sambil menunjuk..." />
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] text-gray-400 block mb-1">Gaya Bicara (Lip Sync)</label>
+                                      <select value={vpTalking} onChange={(e) => setVpTalking(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-xs outline-none">
+                                        {LIVE_TALKING_STYLES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                      </select>
+                                    </div>
+
+                                    <button onClick={handleVideoMotion} className="w-full mt-2 bg-pink-600 hover:bg-pink-500 text-white py-2 rounded text-xs font-bold transition">
+                                       Buat Prompt Video Sekarang
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Loading State */}
+                                {vpLoading && (
+                                  <div className="flex flex-col items-center justify-center py-8">
+                                      <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                                      <p className="text-xs text-gray-400 animate-pulse">Sedang meracik prompt...</p>
+                                  </div>
+                                )}
+
+                                {/* Result Display */}
+                                {vpResult && !vpLoading && (
+                                  <div className="mt-2 space-y-3">
+                                    <div className="bg-gray-800 p-2 rounded border border-gray-600">
+                                      <div className="flex justify-between items-center mb-1">
+                                         <span className="text-[10px] text-green-400 font-bold">PROMPT (ENGLISH) - SIAP PAKAI</span>
+                                         <button onClick={handleCopyText} className="text-[10px] bg-gray-700 px-2 py-1 rounded hover:bg-gray-600 flex items-center gap-1">
+                                            {copyStatus === "Tersalin! ✅" ? <Check size={10} /> : <Copy size={10} />} {copyStatus}
+                                         </button>
+                                      </div>
+                                      <p className="text-[10px] text-gray-300 h-20 overflow-y-auto font-mono bg-black/30 p-1 rounded custom-scrollbar">
+                                        {vpResult.text_en}
+                                      </p>
+                                    </div>
+
+                                    <div className="bg-gray-800 p-2 rounded border border-gray-600">
+                                      <div className="flex justify-between items-center mb-1">
+                                         <span className="text-[10px] text-blue-400 font-bold">STRUCTURED JSON (ADVANCED)</span>
+                                         <button onClick={handleCopyJson} className="text-[10px] bg-gray-700 px-2 py-1 rounded hover:bg-gray-600 flex items-center gap-1">
+                                            {copyStatusJson === "JSON Tersalin! ✅" ? <Check size={10} /> : <Copy size={10} />} {copyStatusJson}
+                                         </button>
+                                      </div>
+                                      <p className="text-[10px] text-gray-500 h-16 overflow-y-auto font-mono bg-black/30 p-1 rounded custom-scrollbar whitespace-pre">
+                                        {JSON.stringify(vpResult.structured_json, null, 2)}
+                                      </p>
+                                    </div>
+                                    
+                                    <button onClick={() => setVpResult(null)} className="w-full text-[10px] text-gray-400 hover:text-white mt-2">
+                                       &larr; Buat Ulang Prompt
+                                    </button>
+                                  </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-4 py-12">
+                        <ImageIcon size={64} className="opacity-30" />
+                        <p className="text-sm text-center px-4">Isi form di sebelah kiri lalu klik <br/><span className="font-bold text-purple-400">GENERATE 4 FOTO</span><br/>untuk melihat hasil AI Live Host</p>
+                    </div>
+                )}
+             </div>
+          </div>
+
+      </div>
+    </div>
+  );
+};
+
+/* ================================================================================
+   BAGIAN 4: MAIN APP WRAPPER DENGAN TAB
+   Menggabungkan ketiga aplikasi di atas dalam satu layar.
+================================================================================
+*/
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('rt'); // Default to RT
+
+  return (
+    <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
+      
+      {/* GLOBAL TAB NAVIGATION */}
+      <div className="sticky top-0 z-[100] bg-slate-900 border-b border-slate-800 shadow-md">
+        <div className="max-w-7xl mx-auto flex">
+            <button
+              onClick={() => setActiveTab('rt')}
+              className={`flex-1 py-4 text-center font-bold text-xs md:text-sm tracking-widest uppercase transition-all
+                ${activeTab === 'rt' 
+                  ? 'bg-blue-600 text-white shadow-[inset_0_-2px_0_rgba(255,255,255,0.3)]' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                 <LayoutGrid size={16}/> GENERATOR KETUA RT
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('pov')}
+              className={`flex-1 py-4 text-center font-bold text-xs md:text-sm tracking-widest uppercase transition-all
+                ${activeTab === 'pov' 
+                  ? 'bg-indigo-600 text-white shadow-[inset_0_-2px_0_rgba(255,255,255,0.3)]' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                 <Camera size={16}/> POV REVIEW GENERATOR
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('live')}
+              className={`flex-1 py-4 text-center font-bold text-xs md:text-sm tracking-widest uppercase transition-all
+                ${activeTab === 'live' 
+                  ? 'bg-purple-600 text-white shadow-[inset_0_-2px_0_rgba(255,255,255,0.3)]' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                 <MonitorPlay size={16}/> LIVE HOST PAK RT
+              </span>
+            </button>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 relative">
+         {/* TAB 1: TOOLS RT */}
+         <div className={activeTab === 'rt' ? 'block animate-in fade-in slide-in-from-left-4 duration-300' : 'hidden'}>
+            <ContentCreatorStudio />
+         </div>
+
+         {/* TAB 2: POV ME */}
+         <div className={activeTab === 'pov' ? 'block animate-in fade-in slide-in-from-right-4 duration-300' : 'hidden'}>
+            <ProductPhotoGen />
+         </div>
+
+         {/* TAB 3: LIVE HOST */}
+         <div className={activeTab === 'live' ? 'block animate-in fade-in slide-in-from-bottom-4 duration-300' : 'hidden'}>
+            <LiveHostGenerator />
+         </div>
+      </div>
+
+    </div>
+  );
+};
+
+export default App;
